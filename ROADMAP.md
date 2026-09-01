@@ -1,7 +1,8 @@
 # Scripture Live — Roadmap
 
-**Status:** Phase 0 complete — spikes measured, harness live in [`eval/`](eval/). The code in
-`index.html` is still the 155-verse prototype, not the product described here.
+**Status:** Phases 0 and 1 complete. The engine lives in [`app/`](app/) and is verified against
+the harness in [`eval/`](eval/). `index.html` is still the deployed 155-verse prototype, and
+stays that way until live microphone capture is verified on a real device.
 
 Turning the demo into a two-corpus product — Bible and Quran — that tracks a live reader
 hands-free, with no operator clicking ahead to guess where they are going.
@@ -12,12 +13,12 @@ this file is the source of truth).
 
 | | |
 |---|---|
-| Today | 155 verses, one HTML file, Chrome only |
+| Engine | full corpora, BM25 + tracking, cross-browser |
 | Target corpora | KJV 31,102 verses · Quran 6,236 ayat |
 | Stack | Vite · TypeScript · transformers.js · Vercel static |
 | Browsers | all four engines, via in-page recognition |
-| Critical path | short ayat, not recognition quality (Phase 0 result) |
-| Phase 0 | complete — see results below |
+| Critical path | live microphone capture, unverified |
+| Phases 0–1 | complete — gates met, see results below |
 
 ---
 
@@ -209,6 +210,44 @@ stage.
 **Gate:** harness reports precision above 95% on high-confidence matches across LibriVox
 samples. A number, not a feeling.
 
+#### Result — gate met
+
+App in [`app/`](app/). Vite and TypeScript, no UI framework, as planned.
+
+| confidence threshold | precision | frames retained |
+|---|---|---|
+| ≥ 0.00 | 95.2% | 100% |
+| ≥ 0.25 | **98.1%** | 83.3% |
+| ≥ 0.50 | 99.2% | 68.3% |
+
+Precision rises monotonically with confidence, so the signal the interface shows is
+discriminative rather than decorative. Confidence is the margin over the runner-up, not an
+absolute score — what matters is whether anything else could plausibly be the answer.
+
+**What makes the number trustworthy.** The harness measures Python; the browser runs
+TypeScript. `npm test` pins them together across all 37,338 verses: a digest over every
+normalized verse, exact search rankings with scores, and a replay of the Spike A transcript
+through the shipping tracker. That replay reproduces the Python measurement exactly —
+95.2% in-book, 98.9% in reading order.
+
+The cross-check earned itself immediately. The app derived matching text by normalizing the
+display text, but the Quran's display text is Uthmani while the harness matches the simple
+edition, and the two diverge orthographically — الصلوة against الصلاة. Folding them still left
+2,331 ayat divergent. The roadmap already had the answer: match on simple, display Uthmani.
+Matching text now ships as its own file, 0.45 MB gzipped for both; the KJV needs none, and
+that is asserted rather than assumed.
+
+**Measured in a browser.** 31,102 verses indexed in 778 ms in the worker. Both corpora
+render, Arabic right-to-left in Amiri with full diacritics. A spoken Psalm 23 acquires at
+23:1, then follows 23:2 through 23:5 in tracked mode with confidence climbing 0.51 to 0.86.
+The core bundle is 5.3 kB gzipped, since transformers.js is imported lazily and browsers
+taking the Web Speech fast lane never download it.
+
+**Not yet verified: live microphone capture.** `getUserMedia`, the AudioWorklet, and
+Whisper's streaming path are written and typechecked but have never run against real audio.
+Both engines need a real device before anyone relies on them, and until that happens
+`index.html` stays the deployed prototype rather than the app.
+
 ### Phase 2 — Abstract the corpus (~1 week)
 
 Both scriptures are ordered collections of numbered units, so they share one engine. They
@@ -306,18 +345,19 @@ but it reshapes Phase 4 substantially. Same engine, three different products:
 
 ---
 
-## Known issues in the current prototype
+## Prototype defects, and where they stand
 
-Carried into Phase 1; listed here so they are not rediscovered.
+All six were fixed in [`app/`](app/) during Phase 1. They remain in `index.html`, which is
+still what Vercel serves, and retire with it.
 
-| # | Location | Issue |
+| # | Issue | Fixed by |
 |---|---|---|
-| 1 | `index.html` `onresult` | Rebuilds `finalTranscript` from index 0 of `e.results` every event. With `continuous = true` the query grows to the whole session, driving every score below the 0.25 threshold after ~60–80 content words. |
-| 2 | `index.html` `onend` | Restarts unconditionally while `listening` is true. Only `not-allowed` clears the flag, so `network`, `audio-capture` and `aborted` spin the restart loop. |
-| 3 | `index.html` `onerror` | Handles `no-speech` and `not-allowed`, silently drops the rest. The user sees "Listening…" forever with no cause shown. |
-| 4 | `index.html` `toggleListening` | Sets `listening = true` before `recognition.start()` and swallows the exception, so a failed start leaves the flag true while the UI reads idle. |
-| 5 | `index.html` `score` | Calls `tokenize(entry.text)` per entry per search. Verse text is immutable — precompute tokens and bigrams at index build. |
-| 6 | `index.html` `score` | No entry-length normalization, so short verses ("Jesus wept.") are disproportionately cheap to match. |
+| 1 | Query rebuilt from the whole session, so the true verse fell below threshold after ~60-80 spoken words. | Reads from `resultIndex` forward, keeps a rolling 15-word window. |
+| 2 | `onend` restarted unconditionally, spinning on errors that restarting cannot fix. | Backs off exponentially; fatal errors stop the engine. |
+| 3 | Every error but two was swallowed silently, leaving "Listening..." forever. | Every error carries a sentence saying what to do about it. |
+| 4 | A failed `start()` left the state claiming to listen while the UI read idle. | The listening flag is set on the start event, not before it. |
+| 5 | Verse text re-tokenized on every search. | Tokenized once at index build. |
+| 6 | No entry-length normalization, so short verses were disproportionately cheap to match. | BM25 normalizes by document length. |
 
 Verse counts verified against the shipped index: 26 books, 155 verses today. KJV is 66 books,
 1,189 chapters, 31,102 verses. Quran is 114 surahs, 6,236 ayat.
