@@ -1,0 +1,11 @@
+# macOS
+.DS_Store
+
+# Vercel — local project link, not shared
+.vercel
+
+# MCP tooling state
+.serena/
+
+# Local archives; the repo is the source, not a snapshot of itself
+*.zip

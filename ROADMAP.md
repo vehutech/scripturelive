@@ -264,7 +264,6 @@ Carried into Phase 1; listed here so they are not rediscovered.
 | 4 | `index.html` `toggleListening` | Sets `listening = true` before `recognition.start()` and swallows the exception, so a failed start leaves the flag true while the UI reads idle. |
 | 5 | `index.html` `score` | Calls `tokenize(entry.text)` per entry per search. Verse text is immutable — precompute tokens and bigrams at index build. |
 | 6 | `index.html` `score` | No entry-length normalization, so short verses ("Jesus wept.") are disproportionately cheap to match. |
-| 7 | repo | `.DS_Store` is committed; `scripturelive.zip` is a copy of the repo sitting inside the repo. |
 
 Verse counts verified against the shipped index: 26 books, 155 verses today. KJV is 66 books,
 1,189 chapters, 31,102 verses. Quran is 114 surahs, 6,236 ayat.
