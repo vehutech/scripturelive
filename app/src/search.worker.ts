@@ -6,7 +6,8 @@
  * two searches per utterance, it lives here too — one message per frame rather than four.
  */
 
-import { loadCorpus, normalizeFor, type CorpusName } from "./corpus";
+import { loadCorpus, type CorpusName } from "./corpus";
+import { adapterFor, type CorpusAdapter } from "./adapters";
 import { Index } from "./matcher";
 import { Tracker, type TrackResult } from "./tracker";
 
@@ -31,7 +32,7 @@ export type FromWorker =
     }
   | { type: "failed"; message: string };
 
-let corpus: CorpusName = "kjv";
+let adapter: CorpusAdapter = adapterFor("kjv");
 let index: Index | null = null;
 let tracker: Tracker | null = null;
 
@@ -43,15 +44,15 @@ self.onmessage = async (event: MessageEvent<ToWorker>) => {
     switch (message.type) {
       case "load": {
         const started = performance.now();
-        corpus = message.corpus;
+        adapter = adapterFor(message.corpus);
         post({ type: "progress", detail: "Downloading the text" });
-        const verses = await loadCorpus(corpus);
+        const verses = await loadCorpus(adapter.name);
         post({ type: "progress", detail: `Indexing ${verses.length.toLocaleString()} verses` });
         index = new Index(verses);
         tracker = new Tracker(index);
         post({
           type: "ready",
-          corpus,
+          corpus: adapter.name,
           verseCount: verses.length,
           termCount: index.termCount,
           ms: Math.round(performance.now() - started),
@@ -61,7 +62,7 @@ self.onmessage = async (event: MessageEvent<ToWorker>) => {
 
       case "feed": {
         if (!tracker) return post({ type: "failed", message: "The index is not ready yet." });
-        post({ type: "result", result: tracker.feed(normalizeFor(corpus, message.text)) });
+        post({ type: "result", result: tracker.feed(adapter.normalize(message.text)) });
         return;
       }
 
@@ -73,7 +74,7 @@ self.onmessage = async (event: MessageEvent<ToWorker>) => {
       case "search": {
         if (!index) return post({ type: "failed", message: "The index is not ready yet." });
         const hits = index
-          .search(normalizeFor(corpus, message.text), { topK: message.topK ?? 5 })
+          .search(adapter.normalize(message.text), { topK: message.topK ?? 5 })
           .map(({ verse, score }) => ({
             ref: verse.ref,
             id: verse.id,

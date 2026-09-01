@@ -1,13 +1,18 @@
 /**
- * Corpus loading and text normalization.
+ * Corpus loading.
  *
- * These normalizers must stay byte-identical to the Python ones in eval/corpus.py.
- * The evaluation harness measures the matcher through those; if the two drift, every
- * number the harness reports stops describing what ships. `npm test` asserts they agree
- * across all 37,338 verses.
+ * Corpora ship as one verse per line plus a small structure file naming each book and its
+ * per-chapter verse counts. Ids and references follow from walking the two together, so
+ * neither is stored — the KJV is 4.1 MB, 1.21 MB gzipped, rather than the 11.7 MB the
+ * evaluation JSON costs.
+ *
+ * Nothing here knows which corpus it holds; everything corpus-specific comes from the
+ * adapter.
  */
 
-export type CorpusName = "kjv" | "quran";
+import { adapterFor, type CorpusAdapter, type CorpusName } from "./adapters";
+
+export type { CorpusName, CorpusAdapter };
 
 export interface Verse {
   /** 0-based ordinal in canonical order — the id the matcher and tracker pass around. */
@@ -25,7 +30,7 @@ export interface Verse {
 interface Structure {
   books: { name: string; chapters: number[] }[];
   /**
-   * Whether matching text ships as a separate file rather than being derived from the
+   * Whether matching text ships as its own file rather than being derived from the
    * display text. True for the Quran, whose display text is Uthmani while matching runs
    * against the simple edition; the two differ orthographically — الصلوة against الصلاة,
    * superscript alif against a written one — in ways no folding reconciles. False for the
@@ -34,60 +39,14 @@ interface Structure {
   hasMatchFile?: boolean;
 }
 
-// Harakat, Quranic annotation signs, superscript alif, and tatweel all carry no
-// information for matching, and recognition never emits them.
-const ARABIC_STRIP = /[ؐ-ًؚ-ٰٟۖ-ۭـ]/g;
-
-const ARABIC_FOLD: Record<string, string> = {
-  "آ": "ا", // آ -> ا
-  "أ": "ا", // أ -> ا
-  "إ": "ا", // إ -> ا
-  "ٱ": "ا", // ٱ -> ا
-  "ى": "ي", // ى -> ي
-  "ة": "ه", // ة -> ه
-};
-
-const ARABIC_FOLD_RE = new RegExp(`[${Object.keys(ARABIC_FOLD).join("")}]`, "g");
-
-/** Fold Arabic to the orthography-insensitive form used for matching. */
-export function normalizeArabic(text: string): string {
-  return text
-    .normalize("NFC")
-    .replace(/[﻿‌‍]/g, "")
-    .replace(ARABIC_STRIP, "")
-    .replace(ARABIC_FOLD_RE, (char) => ARABIC_FOLD[char] ?? char)
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-/** Fold English to the form recognition output arrives in: lowercase, unpunctuated. */
-export function normalizeEnglish(text: string): string {
-  return text
-    .normalize("NFC")
-    .toLowerCase()
-    .replace(/[‘’]/g, "'")
-    .replace(/[^a-z0-9\s']/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-export function normalizeFor(corpus: CorpusName, text: string): string {
-  return corpus === "quran" ? normalizeArabic(text) : normalizeEnglish(text);
-}
-
-/**
- * Rebuild the full verse list from the two shipped files.
- *
- * The text file is one verse per line in canonical order; the structure file names each
- * book and how many verses each of its chapters holds. Everything else — ids, references
- * — follows from walking the two together.
- */
+/** Rebuild the full verse list from the two shipped files. */
 export function parseCorpus(
   name: CorpusName,
   text: string,
   structure: Structure,
   matchText?: string,
 ): Verse[] {
+  const adapter = adapterFor(name);
   const lines = text.split("\n");
   const matchLines = matchText === undefined ? null : matchText.split("\n");
   if (matchLines && matchLines.length !== lines.length) {
@@ -109,12 +68,12 @@ export function parseCorpus(
         }
         verses.push({
           id: verses.length,
-          ref: name === "kjv" ? `${book.name} ${chapter}:${verseNo}` : `${chapter}:${verseNo}`,
+          ref: adapter.formatRef(book.name, chapter, verseNo),
           book: book.name,
           chapter,
           verse: verseNo,
           text: line,
-          matchText: matchLines?.[verses.length] ?? normalizeFor(name, line),
+          matchText: matchLines?.[verses.length] ?? adapter.normalize(line),
         });
       }
     }

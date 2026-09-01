@@ -8,7 +8,7 @@
  * uncertain says so, alternatives stay one tap away, and typing a verse always wins.
  */
 
-import type { CorpusName } from "./corpus";
+import { CORPORA, adapterFor, type CorpusAdapter, type CorpusName } from "./adapters";
 import type { TrackResult } from "./tracker";
 import type { FromWorker, ToWorker } from "./search.worker";
 import type { Engine, EngineStatus } from "./asr/types";
@@ -53,7 +53,7 @@ const worker = new Worker(new URL("./search.worker.ts", import.meta.url), {
   type: "module",
 });
 
-let corpus: CorpusName = "kjv";
+let adapter: CorpusAdapter = adapterFor("kjv");
 let ready = false;
 let listening = false;
 let engine: Engine | null = null;
@@ -64,7 +64,7 @@ const history: { ref: string; text: string }[] = [];
 // --------------------------------------------------------------------------- //
 
 function buildEngines(): { engine: Engine; supported: boolean }[] {
-  const language = corpus === "quran" ? "ar" : "en";
+  const language = adapter.recognitionLanguage;
   const webSpeech = new WebSpeechEngine(language === "ar" ? "ar-SA" : "en-US");
   const whisper = new WhisperEngine("tiny", language);
   return [
@@ -173,7 +173,7 @@ function showVerse(
 
   ui.ref.textContent = ref;
   ui.text.textContent = text;
-  ui.text.setAttribute("dir", corpus === "quran" ? "rtl" : "ltr");
+  ui.text.setAttribute("dir", adapter.direction);
   ui.verse.classList.add("visible");
 
   ui.verse.classList.toggle("uncertain", confidence !== undefined && confidence < UNCERTAIN_BELOW);
@@ -223,7 +223,7 @@ function renderAlternatives(hits: { ref: string; text: string }[]): void {
     const body = button.querySelector<HTMLElement>(".t")!;
     body.textContent = hit.text;
     // Arabic alternatives must read right-to-left like the verse itself.
-    body.setAttribute("dir", corpus === "quran" ? "rtl" : "ltr");
+    body.setAttribute("dir", adapter.direction);
     button.addEventListener("click", () => {
       showVerse(hit.ref, hit.text, { source: "Chosen by hand" });
       ui.alts.classList.remove("visible");
@@ -348,7 +348,7 @@ ui.corpus.addEventListener("change", () => {
   engine?.stop();
   engine = null;
   ready = false;
-  corpus = ui.corpus.value as CorpusName;
+  adapter = adapterFor(ui.corpus.value as CorpusName);
   history.length = 0;
   ui.history.classList.remove("visible");
   ui.verse.classList.remove("visible");
@@ -357,7 +357,7 @@ ui.corpus.addEventListener("change", () => {
   ui.engine.disabled = false;
   ui.transcript.innerHTML = '<span class="hint">Spoken words appear here.</span>';
   populateEngines();
-  send({ type: "load", corpus });
+  send({ type: "load", corpus: adapter.name });
 });
 
 ui.engine.addEventListener("change", updateFooter);
@@ -371,5 +371,17 @@ ui.manual.addEventListener("submit", (event) => {
   setStatus("Searched by hand", "good");
 });
 
+function populateCorpora(): void {
+  ui.corpus.innerHTML = "";
+  for (const option of CORPORA) {
+    const node = document.createElement("option");
+    node.value = option.name;
+    node.textContent = option.label;
+    ui.corpus.append(node);
+  }
+  ui.corpus.value = adapter.name;
+}
+
+populateCorpora();
 populateEngines();
-send({ type: "load", corpus });
+send({ type: "load", corpus: adapter.name });

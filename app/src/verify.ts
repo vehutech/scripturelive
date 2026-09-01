@@ -13,7 +13,8 @@ import { readFileSync, existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
-import { parseCorpus, normalizeEnglish, type CorpusName, type Verse } from "./corpus";
+import { parseCorpus, type CorpusName, type Verse } from "./corpus";
+import { normalizeEnglish } from "./normalize";
 import { Index } from "./matcher";
 import { Tracker } from "./tracker";
 import fixtures from "./fixtures.json" with { type: "json" };
