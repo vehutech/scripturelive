@@ -1,0 +1,4 @@
+# Fetched corpora, audio, and run results — all reproducible from the scripts.
+data/
+.venv/
+__pycache__/
