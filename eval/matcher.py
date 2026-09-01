@@ -104,7 +104,8 @@ class Index:
             candidates = set(range(lo, hi))
 
         scores = self._score(terms, candidates)
-        ranked = sorted(scores.items(), key=lambda kv: kv[1], reverse=True)[:top_k]
+        # Ties broken by id so the ranking is deterministic and matches the TypeScript port.
+        ranked = sorted(scores.items(), key=lambda kv: (-kv[1], kv[0]))[:top_k]
         return [(self.verses[verse_id], score) for verse_id, score in ranked]
 
 
