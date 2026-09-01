@@ -1,6 +1,7 @@
 # Scripture Live — Roadmap
 
-**Status:** planning. The code in `index.html` is a 155-verse prototype, not the product described here.
+**Status:** Phase 0 complete — spikes measured, harness live in [`eval/`](eval/). The code in
+`index.html` is still the 155-verse prototype, not the product described here.
 
 Turning the demo into a two-corpus product — Bible and Quran — that tracks a live reader
 hands-free, with no operator clicking ahead to guess where they are going.
@@ -15,8 +16,8 @@ this file is the source of truth).
 | Target corpora | KJV 31,102 verses · Quran 6,236 ayat |
 | Stack | Vite · TypeScript · transformers.js · Vercel static |
 | Browsers | all four engines, via in-page recognition |
-| Critical path | Arabic recitation speech recognition |
-| To first gate | ~1 week |
+| Critical path | short ayat, not recognition quality (Phase 0 result) |
+| Phase 0 | complete — see results below |
 
 ---
 
@@ -36,6 +37,14 @@ recognition survivable.
 This is a small forced-alignment problem, not a search problem. Keep a periodic global check
 running underneath to catch genuine jumps. Build it early; most of the architecture follows
 from it.
+
+There is also a hard ceiling that makes tracking mandatory rather than merely better.
+**4.5% of ayat and 1.5% of KJV verses are byte-identical to at least one other verse** —
+Ar-Rahman's refrain `فَبِأَىِّ ءَالَآءِ رَبِّكُمَا تُكَذِّبَانِ` occurs 31 times, and "And the LORD spake unto Moses,
+saying" occurs 72 times. Searching text alone cannot separate these, at any recognition
+quality. Only knowing where the reader already was can. Because of this, scoring reports
+whether the right *words* came back separately from whether the right *reference* did: under a
+duplicate the two differ, and only the second is a genuine failure.
 
 ---
 
@@ -135,6 +144,42 @@ Two questions can kill this product. Answer both before writing any product code
 automatically. If Spike B fails badly, Quran needs a fine-tuned model — a different budget and
 timeline, and better known now.
 
+#### Result — gate met
+
+Harness in [`eval/`](eval/). Measured with `whisper-base`, the tier transformers.js would
+realistically run in a browser.
+
+| | Spike A — KJV English | Spike B — Quranic recitation |
+|---|---|---|
+| Material | 17 min continuous LibriVox reading, 155 verses | 120 ayah clips, 3 reciters |
+| WER | **5.7%** | **60.0%** median |
+| Verse identification | 95.2% of segments in-book, 98.9% in reading order | 88.3% acquire, **94.2%** tracked |
+
+**Spike A is answered and needs no further work.** Archaic English was never the problem;
+5.7% WER on continuous human reading is fine.
+
+**Spike B failed on transcription and passed on the thing that matters.** Recognition is as
+bad as expected — Whisper hallucinates verse numbers, repeats phrases, garbles case endings —
+but enough rare tokens survive for BM25 to resolve the ayah. Accuracy is flat across reciters
+(85%, 90%, 90%), so failures are ayah-specific, not voice-specific:
+
+| ground-truth length | n | acquire | tracked |
+|---|---|---|---|
+| 1–4 words | 21 | 61.9% | 71.4% |
+| 5–9 | 30 | 80.0% | 96.7% |
+| 10–19 | 45 | **100%** | **100%** |
+| 20+ | 24 | **100%** | **100%** |
+
+Every ayah of ten words or more was identified perfectly by every reciter, at 60% WER. Every
+failure was eight words or shorter, and the worst cases are structural: 30:2 (`غُلِبَتِ ٱلرُّومُ`,
+two words) failed on all three reciters, because two words is not enough signal for any
+recogniser. In production these never arrive alone — a reciter reads continuously, so context
+pins them; the per-clip test is the pessimistic case.
+
+**Conclusion: the fine-tuned model branch is not needed.** Better recognition buys roughly
+four points; tracking buys nine and degrades far more gracefully. Phase 3 should escalate no
+further than server-side Whisper, and probably not even that.
+
 ### Phase 1 — Make one corpus actually work (~2–3 weeks)
 
 Full KJV, 31,102 verses. Still static, still no framework — the app is genuinely small at this
@@ -148,6 +193,11 @@ stage.
 - **Tracking.** Position plus confidence. While locked, score only a window around the current
   verse; advance when the next verse outscores it; unlock when a global check beats the window
   by a margin for several consecutive frames. It is a small HMM — resist over-building it.
+  **The unlock is not optional.** Phase 0 built tracking without it and matched *zero* segments
+  inside the right book despite a 5.7% WER transcript: an opening line of narration locked the
+  position onto an unrelated verse, and since a window search always returns something, it
+  could never recover. Adding the unlock took that from 0% to 95.2%. A confidence floor is
+  needed too, so noise cannot establish a lock in the first place.
 - **Fix the rolling transcript.** Use `e.resultIndex` and keep the last ~15 words. The present
   code rebuilds the entire session transcript on every event, which drives the match score below
   threshold after roughly 60–80 spoken content words. Tracking needs the fix anyway.
@@ -186,11 +236,15 @@ Scope here depends entirely on what Phase 0 measured. Everything else is ready f
 - **Rendering.** Right to left, a proper Arabic face with full harakat, optional transliteration
   and paired translation.
 - **Recognition.** The transformers.js engine from Phase 1 is already the default; the Web
-  Speech fast lane does not apply here at all. Escalate only as far as Phase 0 requires:
-  1. Whisper via transformers.js — in-browser, offline, static hosting preserved
-  2. Server-side Whisper — strongest general model, but forces a separate service
-  3. A model fine-tuned on open recitation datasets — best accuracy on tajweed, real training
-     effort, and the likely destination if Spike B came back poor
+  Speech fast lane does not apply here at all. **Phase 0 settled how far to escalate: not far.**
+  Whisper via transformers.js, in-browser and offline, already identifies every ayah of ten
+  words or more perfectly. Server-side Whisper stays available if the short-ayah tail proves
+  worth a separate service, and the fine-tuned-model branch is closed unless something later
+  reopens it.
+- **The short-ayah tail is a tracking problem, not a recognition problem.** Ayat under ten
+  words carry too little signal to identify in isolation, and no recogniser fixes that. Lean on
+  position instead, and treat surahs opening with muqattaʿat as the worst case to design
+  against.
 
 **Gate:** correct ayah identified on held-out EveryAyah clips across at least three reciters —
 different voices, not three takes of one.
