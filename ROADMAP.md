@@ -11,8 +11,10 @@ this file is the source of truth).
 
 | | |
 |---|---|
-| Today | 155 verses, one HTML file |
+| Today | 155 verses, one HTML file, Chrome only |
 | Target corpora | KJV 31,102 verses · Quran 6,236 ayat |
+| Stack | Vite · TypeScript · transformers.js · Vercel static |
+| Browsers | all four engines, via in-page recognition |
 | Critical path | Arabic recitation speech recognition |
 | To first gate | ~1 week |
 
@@ -34,6 +36,77 @@ recognition survivable.
 This is a small forced-alignment problem, not a search problem. Keep a periodic global check
 running underneath to catch genuine jumps. Build it early; most of the architecture follows
 from it.
+
+---
+
+## Stack and browser support
+
+### Cross-browser is a consequence of owning the recognition
+
+The Web Speech API is the only thing making the current demo Chrome-only. This is not a polish
+problem to be solved by feature detection, because two of the four engines have no
+implementation to detect.
+
+| | `webkitSpeechRecognition` | `getUserMedia` | WebAssembly |
+|---|---|---|---|
+| Chrome / Edge | yes — audio streamed to Google or Azure | yes | yes |
+| Safari desktop | partial, unreliable for continuous use | yes | yes |
+| iOS Safari | partial, heavily restricted | yes | yes |
+| Firefox | never shipped | yes | yes |
+
+Firefox exposes a `media.webspeech.recognition.enable` preference with no backend behind it,
+and that is not changing.
+
+The other two columns are universal. **Capture the audio directly and run recognition in the
+page, and the browser question disappears.** Cross-browser support is therefore not a later
+feature — it falls out of owning the recognition step.
+
+That step has to be owned regardless: Arabic recitation will never work on a conversational
+model trained for Modern Standard Arabic, so Phase 3 forces it. Doing it in Phase 1 avoids
+solving browser support twice.
+
+**transformers.js is the specific route** — Whisper through ONNX Runtime Web, using WebGPU
+where available (Chrome, Edge, Safari 18+, with Firefox rolling out) and falling back to WASM
+everywhere else. Quantized `whisper-tiny` is roughly 40 MB and `whisper-base` roughly 80 MB,
+cached in IndexedDB after first load. This buys every browser, offline operation, no
+per-minute cost, and no audio leaving the building — which matters when the audio is a
+congregation.
+
+Keep the existing Web Speech path as an opportunistic fast lane on Chrome. It is already
+written and costs nothing. It must simply stop being the only path.
+
+iOS is the weakest target: HTTPS and a user gesture are required, background audio is
+restricted, and WASM is slow on older iPhones. It works, but budget real time for it if
+congregant phones are in scope.
+
+### Build stack
+
+**Vite and TypeScript, no UI framework, through Phase 2.**
+
+TypeScript is not optional — it settles the build-step question before it is asked. Vite is
+near-zero configuration and provides Web Worker imports, WASM loading, and code splitting,
+all three of which this app needs specifically. That is the floor, not over-engineering.
+
+No UI framework yet. Through Phase 2 the product is one screen and roughly 1,500 lines, and a
+framework earns nothing against that.
+
+**Add Svelte at Phase 4**, when views multiply — setup, live, history, settings. Svelte rather
+than React because it compiles away, and the byte budget is already committed to a ~1.5 MB
+corpus plus a ~40 MB model; also because the transcript repaints several times per second and
+a virtual DOM is pure overhead on that path.
+
+Deployment stays Vercel static and unchanged through Phase 3.
+
+### The one thing that breaks static-only hosting
+
+Streaming server-side recognition needs a WebSocket, a long-lived process, and — on the GPU
+route — a GPU. Vercel functions provide none of these, so that path means a separate service
+on Fly.io, Railway, or a plain GPU VPS.
+
+Which is itself an argument for the in-browser route: transformers.js keeps the product on
+pure static hosting through Phase 3. A server becomes unavoidable only when licensed
+translations arrive, since copyrighted text cannot be shipped to the client — a different
+reason, in a later phase.
 
 ---
 
@@ -78,7 +151,10 @@ stage.
 - **Fix the rolling transcript.** Use `e.resultIndex` and keep the last ~15 words. The present
   code rebuilds the entire session transcript on every event, which drives the match score below
   threshold after roughly 60–80 spoken content words. Tracking needs the fix anyway.
-- **Put speech recognition behind an interface** so Phase 3 is a swap, not a rewrite.
+- **Put speech recognition behind an interface** with two implementations from the start: the
+  existing Web Speech engine as a Chrome fast lane, and a transformers.js engine for everyone
+  else. This is what makes Phase 3 a swap rather than a rewrite, and it is also what makes the
+  product cross-browser.
 
 **Gate:** harness reports precision above 95% on high-confidence matches across LibriVox
 samples. A number, not a feeling.
@@ -109,11 +185,12 @@ Scope here depends entirely on what Phase 0 measured. Everything else is ready f
   simple, display Uthmani, write no normalization code of your own.
 - **Rendering.** Right to left, a proper Arabic face with full harakat, optional transliteration
   and paired translation.
-- **Recognition**, ranked by what Phase 0 found:
-  1. Web Speech API — free, weak on recitation
-  2. whisper.cpp in WASM — offline, ~75 MB model, better but still soft on tajweed
-  3. Server-side Whisper — strongest general model, real cost
-  4. A model fine-tuned on open recitation datasets — best here, real training effort
+- **Recognition.** The transformers.js engine from Phase 1 is already the default; the Web
+  Speech fast lane does not apply here at all. Escalate only as far as Phase 0 requires:
+  1. Whisper via transformers.js — in-browser, offline, static hosting preserved
+  2. Server-side Whisper — strongest general model, but forces a separate service
+  3. A model fine-tuned on open recitation datasets — best accuracy on tajweed, real training
+     effort, and the likely destination if Spike B came back poor
 
 **Gate:** correct ayah identified on held-out EveryAyah clips across at least three reciters —
 different voices, not three takes of one.
