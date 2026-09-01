@@ -62,12 +62,19 @@ class Result:
     source: str
     wer: float
     rank: int | None  # 1-based rank of the true verse, None if outside top-5
+    rank_tracked: int | None  # same, but searching only a window around the prior verse
+    ref_tokens: int  # length of the ground truth, the main driver of ambiguity
     predicted: str
     transcript: str
 
 
 def score_clip(entry: dict, index: Index, verses_by_id: dict, asr: Whisper) -> Result:
-    """Score one single-verse clip: WER against its text, rank of its verse."""
+    """Score one single-verse clip: WER against its text, rank of its verse.
+
+    Scores the same clip twice — once against the whole corpus (acquire) and once
+    against a window around the preceding verse (track). The tracked number assumes
+    the position was already known, so it bounds what tracking can buy.
+    """
     audio = DATA / entry["audio"]
     raw, _ = asr.transcribe(audio, entry["language"])
 
@@ -78,28 +85,110 @@ def score_clip(entry: dict, index: Index, verses_by_id: dict, asr: Whisper) -> R
 
     wer = jiwer.wer(reference, hypothesis) if reference and hypothesis else 1.0
 
+    def rank_of(hits) -> int | None:
+        return next(
+            (i + 1 for i, (verse, _) in enumerate(hits) if verse.id == truth.id), None
+        )
+
     hits = index.search(hypothesis, top_k=5)
-    rank = next(
-        (i + 1 for i, (verse, _) in enumerate(hits) if verse.id == truth.id), None
-    )
+    tracked = index.search(hypothesis, top_k=5, near=max(0, truth.id - 1))
 
     return Result(
         ref=truth.ref,
         source=entry.get("reciter", entry["source"]),
         wer=wer,
-        rank=rank,
+        rank=rank_of(hits),
+        rank_tracked=rank_of(tracked),
+        ref_tokens=len(reference.split()),
         predicted=hits[0][0].ref if hits else "—",
         transcript=raw.strip(),
     )
 
 
-def score_continuous(entry: dict, index: Index, asr: Whisper) -> dict:
-    """Score the continuous reading: WER over the whole text, plus tracking behaviour."""
+# A window search always returns something, so tracking needs an explicit way out or
+# one bad lock is permanent. Unlock when a global search beats the window by this
+# margin for this many consecutive segments.
+JUMP_MARGIN = 1.35
+UNLOCK_AFTER = 2
+# Below this BM25 score a segment is noise — a LibriVox preamble, a chapter heading —
+# and must not be allowed to set the position.
+LOCK_FLOOR = 12.0
+
+
+def transcribe_cached(entry: dict, asr: Whisper) -> tuple[str, list[str]]:
+    """Transcribe once and cache, so tracking changes do not pay for recognition again."""
     audio = DATA / entry["audio"]
+    cache = DATA / f"transcript_{audio.stem}_{asr.name}.json"
+    if cache.exists():
+        payload = json.loads(cache.read_text(encoding="utf-8"))
+        print(f"  using cached transcript ({len(payload['segments'])} segments)", file=sys.stderr)
+        return payload["raw"], payload["segments"]
+
     print(f"  transcribing {audio.name} (this takes a few minutes)...", file=sys.stderr)
     started = time.time()
     raw, segments = asr.transcribe(audio, entry["language"])
-    elapsed = time.time() - started
+    cache.write_text(
+        json.dumps(
+            {"raw": raw, "segments": segments, "seconds": round(time.time() - started, 1)},
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    return raw, segments
+
+
+def track(segments: list[str], index: Index, corpus: str) -> list[int]:
+    """Walk segments in order, returning the verse id chosen for each.
+
+    Runs both searches every frame: a window around the current position and a global
+    search. The window wins while it holds, and the global result takes over once it
+    has beaten the window convincingly for several consecutive segments.
+    """
+    position: int | None = None
+    consecutive_better = 0
+    chosen: list[int] = []
+
+    for segment in segments:
+        query = normalize_for(corpus, segment)
+        if len(query.split()) < 3:
+            continue
+
+        globally = index.search(query, top_k=1)
+        windowed = index.search(query, top_k=1, near=position) if position is not None else []
+
+        if not globally and not windowed:
+            continue
+
+        if not windowed:
+            # No lock yet. Only a confident global hit is allowed to establish one.
+            verse, score = globally[0]
+            if score >= LOCK_FLOOR:
+                position = verse.id
+                chosen.append(verse.id)
+            continue
+
+        window_verse, window_score = windowed[0]
+        global_score = globally[0][1] if globally else 0.0
+
+        if global_score > window_score * JUMP_MARGIN:
+            consecutive_better += 1
+        else:
+            consecutive_better = 0
+
+        if consecutive_better >= UNLOCK_AFTER and globally:
+            position = globally[0][0].id
+            consecutive_better = 0
+        else:
+            position = window_verse.id
+        chosen.append(position)
+
+    return chosen
+
+
+def score_continuous(entry: dict, index: Index, asr: Whisper) -> dict:
+    """Score the continuous reading: WER over the whole text, plus tracking behaviour."""
+    started = time.time()
+    raw, segments = transcribe_cached(entry, asr)
 
     corpus = entry["corpus"]
     truth_ids = entry["verse_ids"]
@@ -109,39 +198,22 @@ def score_continuous(entry: dict, index: Index, asr: Whisper) -> dict:
     hypothesis = normalize_for(corpus, raw)
     wer = jiwer.wer(reference, hypothesis)
 
-    # Tracking: walk the segments in order, matching inside a window around the last
-    # confident position, falling back to a global search when the window fails.
+    chosen = track(segments, index, corpus)
     span = set(truth_ids)
-    position: int | None = None
-    matched, in_span, in_order = 0, 0, 0
-    previous: int | None = None
+    in_span = sum(1 for verse_id in chosen if verse_id in span)
+    in_order = sum(1 for a, b in zip(chosen, chosen[1:]) if b >= a)
+    reached = len({verse_id for verse_id in chosen if verse_id in span})
 
-    for segment in segments:
-        query = normalize_for(corpus, segment)
-        if len(query.split()) < 3:
-            continue
-        hits = index.search(query, top_k=1, near=position)
-        if not hits:
-            hits = index.search(query, top_k=1)
-        if not hits:
-            continue
-        verse = hits[0][0]
-        matched += 1
-        if verse.id in span:
-            in_span += 1
-        if previous is not None and verse.id >= previous:
-            in_order += 1
-        previous = position = verse.id
-
-    covered = len({v for v in truth_ids})
     return {
         "wer": wer,
         "segments": len(segments),
-        "matched": matched,
-        "in_span_rate": in_span / matched if matched else 0.0,
-        "in_order_rate": in_order / (matched - 1) if matched > 1 else 0.0,
-        "verses_in_reading": covered,
-        "audio_seconds": elapsed,
+        "matched": len(chosen),
+        "in_span_rate": in_span / len(chosen) if chosen else 0.0,
+        "in_order_rate": in_order / (len(chosen) - 1) if len(chosen) > 1 else 0.0,
+        "verses_reached": reached,
+        "verses_in_reading": len(span),
+        "coverage": reached / len(span) if span else 0.0,
+        "audio_seconds": round(time.time() - started, 1),
         "transcript_head": raw.strip()[:220],
     }
 
@@ -167,6 +239,8 @@ def report_clips(results: list[Result], model: str) -> dict:
     if len(results) > 12:
         print(f"  ... {len(results) - 12} more")
 
+    tracked1 = sum(1 for r in results if r.rank_tracked == 1) / len(results)
+
     summary = {
         "model": model,
         "clips": len(results),
@@ -174,12 +248,39 @@ def report_clips(results: list[Result], model: str) -> dict:
         "wer_median": statistics.median(wers),
         "top1": top1,
         "top5": top5,
+        "top1_tracked": tracked1,
+        "clips_detail": [
+            {
+                "ref": r.ref,
+                "source": r.source,
+                "wer": round(r.wer, 4),
+                "rank": r.rank,
+                "rank_tracked": r.rank_tracked,
+                "ref_tokens": r.ref_tokens,
+                "predicted": r.predicted,
+                "transcript": r.transcript,
+            }
+            for r in results
+        ],
     }
     print(
         f"\n  {model}: {len(results)} clips | "
         f"WER mean {summary['wer_mean']:.1%} median {summary['wer_median']:.1%} | "
-        f"top-1 {top1:.1%} | top-5 {top5:.1%}"
+        f"top-1 {top1:.1%} | top-5 {top5:.1%} | tracked top-1 {tracked1:.1%}"
     )
+
+    # Length is the expected driver: a short ayah carries few discriminative terms.
+    print("\n  by ground-truth length:")
+    buckets = [("1-4 words", 1, 4), ("5-9", 5, 9), ("10-19", 10, 19), ("20+", 20, 10**6)]
+    for label, lo, hi in buckets:
+        group = [r for r in results if lo <= r.ref_tokens <= hi]
+        if not group:
+            continue
+        acquire = sum(1 for r in group if r.rank == 1) / len(group)
+        track = sum(1 for r in group if r.rank_tracked == 1) / len(group)
+        print(
+            f"    {label:<12} n={len(group):<4} acquire {acquire:>6.1%}   tracked {track:>6.1%}"
+        )
 
     by_reciter: dict[str, list[Result]] = {}
     for r in results:
@@ -226,8 +327,12 @@ def main() -> None:
         print(f"\n  transcript opens: {summary['transcript_head']!r}\n")
         print(f"  WER over the full reading  {summary['wer']:.1%}")
         print(f"  segments recognized        {summary['segments']}")
-        print(f"  matched inside Ephesians   {summary['in_span_rate']:.1%}")
+        print(f"  matched inside the book    {summary['in_span_rate']:.1%}")
         print(f"  matches in reading order   {summary['in_order_rate']:.1%}")
+        print(
+            f"  verses reached             {summary['verses_reached']}"
+            f"/{summary['verses_in_reading']}  ({summary['coverage']:.1%})"
+        )
     else:
         verses_by_id = {v.id: v for v in load(corpus)}
         if args.limit:
