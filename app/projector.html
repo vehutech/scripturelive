@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scripture Live — Projection</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=DM+Sans:wght@400;500&family=Amiri:wght@400&display=swap">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  /*
+    Committed to one look on purpose. A projection surface is not themed to the viewer's
+    preference — it is black so the projector throws no light where there is no text, and
+    the room stays dark.
+  */
+  :root {
+    --ink: #f4efe2;
+    --ref: #d8bd6a;
+    --dim: #8b8776;
+  }
+
+  html, body { height: 100%; }
+  body {
+    background: #000;
+    color: var(--ink);
+    font-family: 'DM Sans', sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    cursor: none;
+  }
+  body.idle { cursor: none; }
+
+  .stage {
+    width: 100%;
+    max-width: 90vw;
+    padding: 4vh 4vw;
+    display: flex;
+    flex-direction: column;
+    gap: 3vh;
+    align-items: center;
+    text-align: center;
+    opacity: 0;
+    transition: opacity 320ms ease;
+  }
+  .stage.visible { opacity: 1; }
+  @media (prefers-reduced-motion: reduce) { .stage { transition: none; } }
+
+  .ref {
+    font-size: clamp(1rem, 2.2vw, 2rem);
+    letter-spacing: .22em;
+    text-transform: uppercase;
+    color: var(--ref);
+    font-weight: 500;
+  }
+
+  .text {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 400;
+    /* Sized to fill a projected frame from the back of a room. */
+    font-size: clamp(2rem, 5.4vw, 6rem);
+    line-height: 1.35;
+    max-width: 22ch;
+    text-wrap: balance;
+  }
+  .text[dir="rtl"] {
+    font-family: 'Amiri', 'Geeza Pro', serif;
+    line-height: 1.9;
+    max-width: 18ch;
+  }
+  /* Long verses have to shrink rather than overflow — nothing may be cut off. */
+  .text.long { font-size: clamp(1.5rem, 3.6vw, 4rem); max-width: 30ch; }
+  .text.very-long { font-size: clamp(1.2rem, 2.8vw, 3rem); max-width: 38ch; }
+
+  .translation {
+    font-size: clamp(.95rem, 1.9vw, 2rem);
+    line-height: 1.5;
+    color: var(--dim);
+    max-width: 40ch;
+    font-weight: 400;
+  }
+
+  .waiting {
+    font-size: clamp(.8rem, 1.4vw, 1.1rem);
+    letter-spacing: .2em;
+    text-transform: uppercase;
+    color: #4a4740;
+  }
+  .waiting.hidden { display: none; }
+</style>
+</head>
+<body>
+  <p class="waiting" id="waiting">Waiting for the control window</p>
+  <div class="stage" id="stage" hidden>
+    <div class="ref" id="ref"></div>
+    <p class="text" id="text"></p>
+    <p class="translation" id="translation" hidden></p>
+  </div>
+<script type="module" src="/src/projector.ts"></script>
+</body>
+</html>

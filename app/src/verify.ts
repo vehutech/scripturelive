@@ -16,6 +16,7 @@ import { dirname, join } from "node:path";
 import { parseCorpus, type CorpusName, type Verse } from "./corpus";
 import { normalizeEnglish, normalizeArabic } from "./normalize";
 import { adapterFor } from "./adapters";
+import { shouldAutoProject } from "./channel";
 import { Index } from "./matcher";
 import { Tracker } from "./tracker";
 import fixtures from "./fixtures.json" with { type: "json" };
@@ -187,12 +188,27 @@ function verifyTracking(index: Index): void {
   const tracker = new Tracker(index);
   const chosen: number[] = [];
   const confidences: { id: number; confidence: number }[] = [];
+  /** What the room would actually have seen, frame by frame. */
+  const projectedIds: number[] = [];
+  let onScreen: number | null = null;
   for (const segment of segments) {
     const result = tracker.feed(normalizeEnglish(segment));
     if (result) {
       chosen.push(result.verse.id);
       confidences.push({ id: result.verse.id, confidence: result.confidence });
+      if (
+        shouldAutoProject({
+          confidence: result.confidence,
+          ambiguousReference: result.ambiguousReference,
+          autoSend: true,
+          threshold: 0.5,
+        })
+      ) {
+        onScreen = result.verse.id;
+      }
     }
+    // A frame with nothing new still leaves the previous verse on the wall.
+    if (onScreen !== null) projectedIds.push(onScreen);
   }
 
   const inSpan = chosen.filter((id) => span.has(id)).length / chosen.length;
@@ -211,6 +227,50 @@ function verifyTracking(index: Index): void {
   check(
     `in-order rate ${(inOrder * 100).toFixed(1)}% (Python measured 98.9%)`,
     inOrder >= 0.95,
+  );
+
+  // The Phase 4 gate is about staying with a speaker for a whole service, not about
+  // per-frame accuracy. What matters is how often the position leaves the passage and
+  // how long it takes to come back — every excursion is a wrong verse on the wall.
+  const excursions: number[] = [];
+  let current = 0;
+  for (const id of chosen) {
+    if (span.has(id)) {
+      if (current > 0) excursions.push(current);
+      current = 0;
+    } else {
+      current++;
+    }
+  }
+  if (current > 0) excursions.push(current);
+
+  let longestHeld = 0;
+  let run = 0;
+  for (const id of chosen) {
+    run = span.has(id) ? run + 1 : 0;
+    longestHeld = Math.max(longestHeld, run);
+  }
+
+  const worst = excursions.length ? Math.max(...excursions) : 0;
+
+  // What the room saw is the number that matters. The tracker may wander through a
+  // preamble or an aside; the confidence gate is what decides whether that reaches the
+  // wall, and only frames that clear it count against this.
+  const wrongOnScreen = projectedIds.filter((id) => !span.has(id)).length;
+  const screenAccuracy = projectedIds.length
+    ? 1 - wrongOnScreen / projectedIds.length
+    : 1;
+
+  console.log(
+    `\n        over ${(segments.length * 5.5 / 60).toFixed(0)} minutes of continuous reading:` +
+      `\n          tracker: ${excursions.length} excursion(s), worst ${worst} frames astray,` +
+      ` longest unbroken run ${longestHeld}` +
+      `\n          screen:  ${wrongOnScreen}/${projectedIds.length} frames showed a verse` +
+      ` outside the passage (${(screenAccuracy * 100).toFixed(1)}% correct)`,
+  );
+  check(
+    `Phase 4 gate — the wall stays correct across a full reading (${(screenAccuracy * 100).toFixed(1)}%)`,
+    screenAccuracy >= 0.98,
   );
 
   // The Phase 1 gate: precision on the matches the UI would actually present as
@@ -362,6 +422,43 @@ function verifyHeldOut(index: Index): void {
     reciters >= 3 && tracked >= 0.9,
   );
 }
+
+/**
+ * The projection safety rule.
+ *
+ * A wrong verse behind a speaker is the failure this product cannot afford, so what may
+ * reach the room unattended is worth asserting rather than trusting to a handler.
+ */
+function verifyProjectionRule(): void {
+  console.log("\nprojection safety");
+  const base = { autoSend: true, threshold: 0.5 };
+
+  check("a confident match projects", shouldAutoProject({ ...base, confidence: 0.8 }));
+  check("a match at the threshold projects", shouldAutoProject({ ...base, confidence: 0.5 }));
+  check(
+    "an uncertain match holds",
+    !shouldAutoProject({ ...base, confidence: 0.49 }),
+  );
+  check("a guess holds", !shouldAutoProject({ ...base, confidence: 0.05 }));
+  check(
+    "an ambiguous reference holds even when scored highly",
+    !shouldAutoProject({ ...base, confidence: 0.99, ambiguousReference: true }),
+  );
+  check(
+    "nothing projects while auto-send is off",
+    !shouldAutoProject({ autoSend: false, threshold: 0.5, confidence: 1 }),
+  );
+  check(
+    "an operator's own choice projects",
+    shouldAutoProject({ ...base, confidence: undefined }),
+  );
+  check(
+    "an operator's choice still holds while auto-send is off",
+    !shouldAutoProject({ autoSend: false, threshold: 0.5, confidence: undefined }),
+  );
+}
+
+verifyProjectionRule();
 
 const kjv = verifyCorpus("kjv");
 const quran = verifyCorpus("quran");

@@ -8,12 +8,13 @@
  * uncertain says so, alternatives stay one tap away, and typing a verse always wins.
  */
 
-import { CORPORA, adapterFor, type CorpusAdapter, type CorpusName } from "./adapters";
+import { ADAPTERS, CORPORA, adapterFor, type CorpusAdapter, type CorpusName } from "./adapters";
 import type { TrackResult } from "./tracker";
 import type { FromWorker, ToWorker } from "./search.worker";
 import type { Engine, EngineStatus } from "./asr/types";
 import { WebSpeechEngine } from "./asr/webspeech";
 import { WhisperEngine } from "./asr/whisper";
+import { Channel, shouldAutoProject, type ProjectedVerse } from "./channel";
 
 /** Below this the match is shown as a guess rather than an answer. */
 const GUESS_BELOW = 0.25;
@@ -48,6 +49,12 @@ const ui = {
   query: el<HTMLInputElement>("query"),
   history: el("history"),
   footer: el("footer"),
+  openProjector: el<HTMLButtonElement>("openProjector"),
+  projDot: el("projDot"),
+  projLabel: el("projLabel"),
+  autoSend: el<HTMLInputElement>("autoSend"),
+  sendNow: el<HTMLButtonElement>("sendNow"),
+  blackout: el<HTMLButtonElement>("blackout"),
 };
 
 const worker = new Worker(new URL("./search.worker.ts", import.meta.url), {
@@ -56,6 +63,129 @@ const worker = new Worker(new URL("./search.worker.ts", import.meta.url), {
 
 let adapter: CorpusAdapter = adapterFor("kjv");
 let translationLabel: string | null = null;
+
+// --------------------------------------------------------------------------- //
+// Projection
+// --------------------------------------------------------------------------- //
+
+/**
+ * Operator settings, remembered between services.
+ *
+ * Local only, and deliberately so. The chosen audience is one machine running a control
+ * window and a projector window in the same browser, which needs no account and no
+ * server to sync against. Storage can throw outright in a private window, so every access
+ * is guarded and a failure just means the defaults.
+ */
+const SETTINGS_KEY = "scripture-live:settings";
+
+interface Settings {
+  corpus: CorpusName;
+  engineId: string;
+  autoSend: boolean;
+}
+
+function loadSettings(): Partial<Settings> {
+  try {
+    return JSON.parse(localStorage.getItem(SETTINGS_KEY) ?? "{}") as Partial<Settings>;
+  } catch {
+    return {};
+  }
+}
+
+function saveSettings(): void {
+  try {
+    localStorage.setItem(
+      SETTINGS_KEY,
+      JSON.stringify({
+        corpus: adapter.name,
+        engineId: ui.engine.value,
+        autoSend: ui.autoSend.checked,
+      } satisfies Settings),
+    );
+  } catch {
+    // Remembering settings is a convenience, never a requirement.
+  }
+}
+
+const saved = loadSettings();
+
+const projection = new Channel("control");
+/** The verse currently on the projected screen, so a reconnecting projector can catch up. */
+let projected: ProjectedVerse | null = null;
+/** The verse the control view is showing, which may not be what the room sees. */
+let candidate: ProjectedVerse | null = null;
+let projectorWindow: Window | null = null;
+
+/**
+ * A match only reaches the room on its own if it clears the confidence bar. Anything
+ * below it stays in the control view for the operator to send by hand — the whole point
+ * of the threshold is that a wrong verse never appears behind the speaker unattended.
+ */
+function considerForProjection(
+  verse: ProjectedVerse,
+  confidence: number | undefined,
+  ambiguousReference: boolean,
+): void {
+  candidate = verse;
+  ui.sendNow.disabled = !projection.peerConnected;
+  if (
+    shouldAutoProject({
+      confidence,
+      ambiguousReference,
+      autoSend: ui.autoSend.checked,
+      threshold: UNCERTAIN_BELOW,
+    })
+  ) {
+    sendToProjection(verse);
+  }
+}
+
+function sendToProjection(verse: ProjectedVerse): void {
+  projected = verse;
+  projection.send({ kind: "verse", verse });
+  ui.blackout.disabled = !projection.peerConnected;
+}
+
+function blackout(): void {
+  projected = null;
+  projection.send({ kind: "blank" });
+  ui.blackout.disabled = true;
+}
+
+function setProjectorState(connected: boolean): void {
+  ui.projDot.classList.toggle("live", connected);
+  ui.projLabel.textContent = connected ? "Projector live" : "No projector";
+  ui.sendNow.disabled = !connected || candidate === null;
+  ui.blackout.disabled = !connected || projected === null;
+}
+
+projection.onPeer(setProjectorState);
+// A projector opened mid-service asks what should already be showing.
+projection.onRequest(() => {
+  projection.send(projected ? { kind: "verse", verse: projected } : { kind: "blank" });
+});
+
+ui.openProjector.addEventListener("click", () => {
+  projectorWindow = window.open(
+    "/projector.html",
+    "scripture-live-projector",
+    "width=1280,height=720",
+  );
+  if (!projectorWindow) {
+    setStatus(
+      "The projector window was blocked. Allow pop-ups for this site, then try again.",
+      "bad",
+    );
+    return;
+  }
+  projectorWindow.focus();
+});
+
+ui.sendNow.addEventListener("click", () => {
+  if (candidate) sendToProjection(candidate);
+});
+
+ui.blackout.addEventListener("click", blackout);
 let ready = false;
 let listening = false;
 let engine: Engine | null = null;
@@ -219,6 +349,18 @@ function showVerse(
     }
   }
 
+  considerForProjection(
+    {
+      ref,
+      text,
+      direction: adapter.direction,
+      corpus: adapter.name,
+      ...(translation ? { translation } : {}),
+    },
+    confidence,
+    ambiguous,
+  );
+
   if (!history.some((entry) => entry.ref === ref)) {
     history.unshift({ ref, text });
     if (history.length > 8) history.pop();
@@ -369,6 +511,7 @@ ui.corpus.addEventListener("change", () => {
   engine = null;
   ready = false;
   adapter = adapterFor(ui.corpus.value as CorpusName);
+  saveSettings();
   history.length = 0;
   ui.history.classList.remove("visible");
   ui.verse.classList.remove("visible");
@@ -380,7 +523,11 @@ ui.corpus.addEventListener("change", () => {
   send({ type: "load", corpus: adapter.name });
 });
 
-ui.engine.addEventListener("change", updateFooter);
+ui.engine.addEventListener("change", () => {
+  updateFooter();
+  saveSettings();
+});
+ui.autoSend.addEventListener("change", saveSettings);
 
 ui.manual.addEventListener("submit", (event) => {
   event.preventDefault();
@@ -402,6 +549,27 @@ function populateCorpora(): void {
   ui.corpus.value = adapter.name;
 }
 
+// Registered only in a built app: in dev the worker would serve stale modules and make
+// every edit look like it did not apply.
+if ("serviceWorker" in navigator && import.meta.env.PROD) {
+  window.addEventListener("load", () => {
+    void navigator.serviceWorker.register("/sw.js").catch(() => {
+      // Offline support is a convenience; failing to register must not break the app.
+    });
+  });
+}
+
+if (saved.corpus && saved.corpus in ADAPTERS) adapter = adapterFor(saved.corpus);
+if (saved.autoSend !== undefined) ui.autoSend.checked = saved.autoSend;
+
 populateCorpora();
 populateEngines();
+// Restore the engine only if it is still available in this browser.
+if (saved.engineId) {
+  const option = [...ui.engine.options].find((o) => o.value === saved.engineId && !o.disabled);
+  if (option) {
+    ui.engine.value = saved.engineId;
+    updateFooter();
+  }
+}
 send({ type: "load", corpus: adapter.name });
