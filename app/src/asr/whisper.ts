@@ -64,6 +64,11 @@ export class WhisperEngine implements Engine {
   private worklet: AudioWorkletNode | null = null;
   private timer: ReturnType<typeof setTimeout> | null = null;
   private backend: "webgpu" | "wasm" | null = null;
+  /**
+   * English-only models reject `language` and `task` outright rather than ignoring them,
+   * so the generation options depend on which model actually loaded.
+   */
+  private multilingual = false;
   /** Duration of the last pass, used to pace the next one. */
   private lastPassMs = MIN_HOP_MS;
   /** Rolling buffer of the most recent WINDOW_SECONDS of audio. */
@@ -114,8 +119,10 @@ export class WhisperEngine implements Engine {
 
     // Imported lazily so browsers using the Web Speech fast lane never download it.
     const { pipeline } = await import("@huggingface/transformers");
-    const model =
-      this.language === "en" ? MODELS[this.size].en : MODELS[this.size].multilingual;
+    this.multilingual = this.language !== "en";
+    const model = this.multilingual
+      ? MODELS[this.size].multilingual
+      : MODELS[this.size].en;
 
     const progress_callback = (event: { status?: string; progress?: number }) => {
       if (event.status === "progress" && typeof event.progress === "number") {
@@ -216,9 +223,8 @@ export class WhisperEngine implements Engine {
     try {
       const audio = this.buffer.slice(this.buffer.length - this.filled);
       const output = await this.transcriber(audio, {
-        language: this.language,
-        task: "transcribe",
         return_timestamps: false,
+        ...(this.multilingual ? { language: this.language, task: "transcribe" } : {}),
       });
       const text = (output.text ?? "").trim();
       // Overlapping windows re-transcribe the same speech, so only changes are worth
