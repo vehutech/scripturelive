@@ -1,8 +1,9 @@
 # Scripture Live — Roadmap
 
-**Status:** Phases 0 and 1 complete. The engine lives in [`app/`](app/) and is verified against
-the harness in [`eval/`](eval/). `index.html` is still the deployed 155-verse prototype, and
-stays that way until live microphone capture is verified on a real device.
+**Status:** Phases 0, 1 and 2 complete. The engine lives in [`app/`](app/) and is verified
+against the harness in [`eval/`](eval/); recognition is verified against real audio in both
+languages. `index.html` is still the deployed 155-verse prototype, and stays that way until
+microphone capture itself is exercised on a real device.
 
 Turning the demo into a two-corpus product — Bible and Quran — that tracks a live reader
 hands-free, with no operator clicking ahead to guess where they are going.
@@ -17,8 +18,8 @@ this file is the source of truth).
 | Target corpora | KJV 31,102 verses · Quran 6,236 ayat |
 | Stack | Vite · TypeScript · transformers.js · Vercel static |
 | Browsers | all four engines, via in-page recognition |
-| Critical path | live microphone capture, unverified |
-| Phases 0–1 | complete — gates met, see results below |
+| Critical path | microphone capture; recognition now verified |
+| Phases 0–2 | complete — gates met, see results below |
 
 ---
 
@@ -84,6 +85,20 @@ congregation.
 
 Keep the existing Web Speech path as an opportunistic fast lane on Chrome. It is already
 written and costs nothing. It must simply stop being the only path.
+
+**Pin transformers.js to the 3.x line.** Version 4.2 bundles an ONNX Runtime whose graph
+optimizer rejects Whisper's quantized decoder weights outright — every model load fails with
+`TransposeDQWeightsForMatMulNBits Missing required scale`. It is not a model problem: the
+onnx-community and Xenova builds fail identically, mixed dtypes do not help, and neither does
+lowering the optimization level. The 3.x runtime loads the same weights without complaint.
+Treat a major-version bump here as something to verify against real audio, not a routine
+upgrade.
+
+**Recognition is slower than speech on CPU.** Measured on a six-second window: about 4.2 s on
+WebGPU once warm, about 7 s on WASM. So passes cannot run on a fixed short interval — they
+run back to back, waiting for the previous one, and the engine settles at whatever rate the
+device sustains. WebGPU is preferred; the WASM fallback says plainly that it will lag. English
+uses the English-only model, which is smaller and more accurate there.
 
 iOS is the weakest target: HTTPS and a user gesture are required, background audio is
 restricted, and WASM is slow on older iPhones. It works, but budget real time for it if
@@ -243,10 +258,17 @@ render, Arabic right-to-left in Amiri with full diacritics. A spoken Psalm 23 ac
 The core bundle is 5.3 kB gzipped, since transformers.js is imported lazily and browsers
 taking the Web Speech fast lane never download it.
 
-**Not yet verified: live microphone capture.** `getUserMedia`, the AudioWorklet, and
-Whisper's streaming path are written and typechecked but have never run against real audio.
-Both engines need a real device before anyone relies on them, and until that happens
-`index.html` stays the deployed prototype rather than the app.
+**Recognition since verified against real audio.** The offline engine could not load its
+model at all on first contact with a real browser — an ONNX Runtime regression, recorded under
+the stack section above. With that fixed, English transcribes a spoken Psalm 23 as "The Lord
+is my shepherd. I shall not want. He may cathme to lie down in green pastures" — *maketh*
+mangled, exactly the error class the matcher exists to absorb — and resolves to Psalms 23:1
+with 23:2 second. Arabic transcribes a recitation of 1:1 as بسم الله الرحمن الرحيم, exactly its
+ground truth.
+
+**Still unverified: microphone capture.** `getUserMedia` and the AudioWorklet have never run
+against a live device — everything downstream of the audio now has. Until capture is
+exercised, `index.html` stays deployed rather than the app.
 
 ### Phase 2 — Abstract the corpus (~1 week)
 
@@ -264,6 +286,20 @@ differ in ways that will cost you if collapsed.
   either.
 
 **Gate:** the KJV path still passes every Phase 1 measurement after the refactor.
+
+#### Result — gate met
+
+Each corpus now has one adapter in [`app/src/adapters.ts`](app/src/adapters.ts) holding its
+label, writing direction, recognition language, normalizer, and reference format. Those five
+facts had been flattened into ternaries spread across three files. Adding a third corpus is
+now adding an adapter, and the corpus picker builds itself from the adapter list rather than
+duplicating it in markup.
+
+Dependencies flow one way with no cycles: normalize, adapters, corpus, matcher, tracker.
+
+The KJV path reports exactly the numbers it did before the refactor — 95.2% in-book, 98.9% in
+reading order, 98.1% precision above a 0.25 confidence threshold — and both corpora still
+agree with the Python harness across all 37,338 verses.
 
 ### Phase 3 — Quran (~3–4 weeks)
 
