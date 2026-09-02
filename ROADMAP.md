@@ -1,8 +1,8 @@
 # Scripture Live — Roadmap
 
-**Status:** All five phases complete, every gate measured. The product lives in
-[`app/`](app/) and is verified against the harness in [`eval/`](eval/). `index.html` is still
-the deployed prototype; switching the deployment over is now the open decision.
+**Status:** All five phases complete, every gate measured, and the app is what deploys. The
+product lives in [`app/`](app/) and is verified against the harness in [`eval/`](eval/). The
+155-verse prototype has been retired; it remains in history at `7677f3c`.
 
 Turning the demo into a two-corpus product — Bible and Quran — that tracks a live reader
 hands-free, with no operator clicking ahead to guess where they are going.
@@ -455,16 +455,18 @@ one does not. The other two readings remain open as separate products on the sam
 - a student drilling hifz — the most new logic, since the engine would have to compare
   against expected text rather than locate within it
 
-What is genuinely open now is smaller and concrete: whether to point the deployment at
-[`app/`](app/) and retire `index.html`, and whether the short-ayah tail under ten words is
-worth further work given that tracking already carries it.
+The deployment now points at [`app/`](app/) and the prototype is deleted. What is genuinely
+open is smaller: whether the short-ayah tail under ten words is worth further work given that
+tracking already carries it, and whether to add cross-origin isolation so WebAssembly can run
+multithreaded — which would speed up the CPU fallback but risks breaking the webfonts, and
+matters little while WebGPU is the primary path.
 
 ---
 
 ## Prototype defects, and where they stand
 
-All six were fixed in [`app/`](app/) during Phase 1. They remain in `index.html`, which is
-still what Vercel serves, and retire with it.
+All six were fixed in [`app/`](app/) during Phase 1. The prototype they lived in has been
+deleted now that the app deploys in its place; it remains in history at `7677f3c`.
 
 | # | Issue | Fixed by |
 |---|---|---|
