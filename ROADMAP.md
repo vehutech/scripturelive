@@ -1,9 +1,8 @@
 # Scripture Live — Roadmap
 
-**Status:** Phases 0 through 3 complete. The engine lives in [`app/`](app/), verified against
-the harness in [`eval/`](eval/), with recognition and microphone capture both exercised on a
-real device. `index.html` is still the deployed prototype; switching the deployment over is
-the next decision rather than the next blocker.
+**Status:** All five phases complete, every gate measured. The product lives in
+[`app/`](app/) and is verified against the harness in [`eval/`](eval/). `index.html` is still
+the deployed prototype; switching the deployment over is now the open decision.
 
 Turning the demo into a two-corpus product — Bible and Quran — that tracks a live reader
 hands-free, with no operator clicking ahead to guess where they are going.
@@ -14,12 +13,12 @@ this file is the source of truth).
 
 | | |
 |---|---|
-| Engine | both corpora, BM25 + tracking, cross-browser |
+| Built for | the operator running projection |
 | Target corpora | KJV 31,102 verses · Quran 6,236 ayat |
 | Stack | Vite · TypeScript · transformers.js · Vercel static |
 | Browsers | all four engines, via in-page recognition |
-| Critical path | short ayat under 10 words; tracking carries them |
-| Phases 0–3 | complete — gates met, see results below |
+| On screen | 99.4% correct across a 17-minute reading |
+| Phases 0–4 | complete — all gates met |
 
 ---
 
@@ -370,6 +369,48 @@ Accounts, saved sessions, projection output, offline mode.
 **Gate:** a full service or khutbah followed end to end without losing lock or needing a hand
 on the keyboard.
 
+#### Result — gate met
+
+**The open question is answered: the operator holds the screen.** That is the wedge —
+ProPresenter and EasyWorship own church projection but still need someone clicking ahead to
+guess where the speaker is going.
+
+The projector is a second document the operator drags to the second display, driven over
+`BroadcastChannel` with a heartbeat both ways so nobody has to wonder whether the screen
+behind them is live. It holds no state, runs no recognition, and decides nothing — whatever
+the control window sends is what the room sees, so a fault in matching cannot reach the wall
+on its own. It is 0.6 kB gzipped, carries neither corpus nor model, and holds a wake lock
+because services outlast any idle timeout.
+
+**What may reach the room unattended is the safety rule of this phase**, so it lives in its own
+function and is asserted rather than trusted to a handler. Below the confidence bar, hold. An
+ambiguous reference holds however well it scored, because the words being right is not the
+same as the reference being right. An operator's own search or history choice always goes.
+
+That rule carries the phase. Over the seventeen-minute reading:
+
+| | |
+|---|---|
+| Tracker excursions outside the passage | 2, worst 8 consecutive frames |
+| Longest unbroken run | 177 frames |
+| **Frames where the wall showed a wrong verse** | **1 of 181 — 99.4% correct** |
+
+The control view is allowed to wander; the screen is not. The gate measures the screen rather
+than the tracker, because that is what an audience sees.
+
+A service worker caches the corpus and shell, so a dead connection mid-service cannot cost the
+text. Speech models are left alone — transformers.js already caches those.
+
+**No accounts and no backend.** The roadmap expected both here, but the chosen audience
+removes the need: one machine running a control window and a projector window in the same
+browser has nothing to sync. Settings persist in local storage. A server becomes necessary
+only when licensed translations arrive, which remains a licensing decision rather than a
+technical one.
+
+**Svelte was not added either.** The roadmap called for it once views multiplied, reasoning
+from setup, live, history and settings. There are two views, one of which is a hundred lines
+of display, so vanilla still wins on the same reasoning that predicted the change.
+
 ---
 
 ## Two things that will bite
@@ -406,12 +447,17 @@ underserved — build toward it rather than toward a general scripture viewer.
 
 ## Open question
 
-**Who holds the screen?** Phases 0 through 2 are identical either way, so this is not blocking,
-but it reshapes Phase 4 substantially. Same engine, three different products:
+**Who holds the screen?** Answered during Phase 4: **the operator running projection.** That
+is the wedge — existing tools own the screen but still need a hand on the keyboard, and this
+one does not. The other two readings remain open as separate products on the same engine:
 
 - a congregant following along on their phone
-- an operator running projection
-- a student drilling hifz
+- a student drilling hifz — the most new logic, since the engine would have to compare
+  against expected text rather than locate within it
+
+What is genuinely open now is smaller and concrete: whether to point the deployment at
+[`app/`](app/) and retire `index.html`, and whether the short-ayah tail under ten words is
+worth further work given that tracking already carries it.
 
 ---
 
