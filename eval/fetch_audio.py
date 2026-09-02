@@ -39,6 +39,9 @@ RECITERS = [
 # Stride across the whole Quran so the sample spans short and long ayat, Meccan
 # and Medinan, rather than clustering in one surah.
 QURAN_SAMPLE_SIZE = 40
+# The held-out set uses the same stride offset by half a step, so it spans the corpus
+# the same way while sharing no ayah with the set the matcher was developed against.
+HELDOUT_OFFSET_FRACTION = 0.5
 
 
 def _download(url: str, dest: Path) -> bool:
@@ -83,11 +86,19 @@ def fetch_english() -> list[dict]:
     ]
 
 
-def fetch_quran() -> list[dict]:
-    """Download a strided ayah sample for each reciter."""
+def fetch_quran(heldout: bool = False) -> list[dict]:
+    """Download a strided ayah sample for each reciter.
+
+    With `heldout`, draws a disjoint sample so the Phase 3 gate is measured on ayat the
+    matcher was never developed against.
+    """
     ayat = load("quran")
     stride = len(ayat) // QURAN_SAMPLE_SIZE
-    sample = [ayat[i * stride] for i in range(QURAN_SAMPLE_SIZE)]
+    offset = int(stride * HELDOUT_OFFSET_FRACTION) if heldout else 0
+    sample = [ayat[i * stride + offset] for i in range(QURAN_SAMPLE_SIZE)]
+    if heldout:
+        baseline = {ayat[i * stride].id for i in range(QURAN_SAMPLE_SIZE)}
+        assert not baseline & {a.id for a in sample}, "held-out set overlaps the baseline"
 
     manifest: list[dict] = []
     downloaded = 0
@@ -105,7 +116,7 @@ def fetch_quran() -> list[dict]:
                 continue
             manifest.append(
                 {
-                    "spike": "B",
+                    "spike": "B-heldout" if heldout else "B",
                     "corpus": "quran",
                     "audio": str(dest.relative_to(AUDIO.parent)),
                     "source": f"everyayah/{reciter}",
@@ -122,6 +133,18 @@ def fetch_quran() -> list[dict]:
 
 
 def main() -> None:
+    heldout = "--heldout" in sys.argv
+    if heldout:
+        print("Held-out Quran sample:", file=sys.stderr)
+        manifest = json.loads((AUDIO.parent / "manifest.json").read_text(encoding="utf-8"))
+        manifest = [m for m in manifest if m["spike"] != "B-heldout"]
+        manifest += fetch_quran(heldout=True)
+        path = AUDIO.parent / "manifest.json"
+        path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
+        n = sum(1 for m in manifest if m["spike"] == "B-heldout")
+        print(f"manifest updated — {n} held-out ayah clips")
+        return
+
     print("Spike A — LibriVox KJV:", file=sys.stderr)
     manifest = fetch_english()
     print("Spike B — EveryAyah recitation:", file=sys.stderr)

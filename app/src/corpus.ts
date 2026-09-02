@@ -25,6 +25,8 @@ export interface Verse {
   text: string;
   /** Normalized, for matching. */
   matchText: string;
+  /** Secondary translation, where the corpus ships one. */
+  translation?: string;
 }
 
 interface Structure {
@@ -37,6 +39,8 @@ interface Structure {
    * KJV, where normalizing the display text reproduces the matching text exactly.
    */
   hasMatchFile?: boolean;
+  /** Attribution for the shipped translation, shown to the reader. Absent when none. */
+  translation?: string;
 }
 
 /** Rebuild the full verse list from the two shipped files. */
@@ -45,10 +49,13 @@ export function parseCorpus(
   text: string,
   structure: Structure,
   matchText?: string,
+  translationText?: string,
 ): Verse[] {
   const adapter = adapterFor(name);
   const lines = text.split("\n");
   const matchLines = matchText === undefined ? null : matchText.split("\n");
+  const translationLines =
+    translationText === undefined ? null : translationText.split("\n");
   if (matchLines && matchLines.length !== lines.length) {
     throw new Error(
       `${name}: ${lines.length} verses but ${matchLines.length} lines of matching text`,
@@ -66,6 +73,7 @@ export function parseCorpus(
             `${name}: structure expects a verse at line ${verses.length} but the text ends`,
           );
         }
+        const translation = translationLines?.[verses.length];
         verses.push({
           id: verses.length,
           ref: adapter.formatRef(book.name, chapter, verseNo),
@@ -74,6 +82,7 @@ export function parseCorpus(
           verse: verseNo,
           text: line,
           matchText: matchLines?.[verses.length] ?? adapter.normalize(line),
+          ...(translation ? { translation } : {}),
         });
       }
     }
@@ -100,8 +109,18 @@ export async function loadCorpus(name: CorpusName, base = "/data"): Promise<Vers
     get(`${base}/${name}.idx.json`),
   ]);
   const structure = JSON.parse(structureJson) as Structure;
-  const matchText = structure.hasMatchFile
-    ? await get(`${base}/${name}.match.txt`)
-    : undefined;
-  return parseCorpus(name, text, structure, matchText);
+  const [matchText, translationText] = await Promise.all([
+    structure.hasMatchFile ? get(`${base}/${name}.match.txt`) : undefined,
+    structure.translation ? get(`${base}/${name}.translation.txt`) : undefined,
+  ]);
+  return parseCorpus(name, text, structure, matchText, translationText);
+}
+
+/** Attribution for a corpus's translation, or null when it ships none. */
+export async function translationLabel(
+  name: CorpusName,
+  base = "/data",
+): Promise<string | null> {
+  const structure = JSON.parse(await get(`${base}/${name}.idx.json`)) as Structure;
+  return structure.translation ?? null;
 }

@@ -40,6 +40,7 @@ const ui = {
   dot: el("dot"),
   meta: el("meta"),
   text: el("text"),
+  translation: el<HTMLParagraphElement>("translation"),
   notice: el<HTMLParagraphElement>("notice"),
   alts: el("alts"),
   altList: el("altList"),
@@ -54,6 +55,7 @@ const worker = new Worker(new URL("./search.worker.ts", import.meta.url), {
 });
 
 let adapter: CorpusAdapter = adapterFor("kjv");
+let translationLabel: string | null = null;
 let ready = false;
 let listening = false;
 let engine: Engine | null = null;
@@ -167,14 +169,30 @@ function showVerse(
     ambiguous?: boolean;
     tracked?: boolean;
     source?: string;
+    translation?: string | undefined;
   } = {},
 ): void {
-  const { confidence, ambiguous = false, tracked = false, source } = options;
+  const { confidence, ambiguous = false, tracked = false, source, translation } = options;
 
   ui.ref.textContent = ref;
   ui.text.textContent = text;
   ui.text.setAttribute("dir", adapter.direction);
   ui.verse.classList.add("visible");
+
+  // Shown beside the canonical text, never in place of it.
+  if (translation) {
+    ui.translation.hidden = false;
+    ui.translation.textContent = translation;
+    if (translationLabel) {
+      const note = document.createElement("span");
+      note.className = "attribution";
+      note.textContent = translationLabel;
+      ui.translation.append(note);
+    }
+  } else {
+    ui.translation.hidden = true;
+    ui.translation.textContent = "";
+  }
 
   ui.verse.classList.toggle("uncertain", confidence !== undefined && confidence < UNCERTAIN_BELOW);
   ui.verse.classList.toggle("guess", confidence !== undefined && confidence < GUESS_BELOW);
@@ -208,7 +226,7 @@ function showVerse(
   }
 }
 
-function renderAlternatives(hits: { ref: string; text: string }[]): void {
+function renderAlternatives(hits: { ref: string; text: string; translation?: string }[]): void {
   ui.altList.innerHTML = "";
   if (hits.length === 0) {
     ui.alts.classList.remove("visible");
@@ -225,7 +243,7 @@ function renderAlternatives(hits: { ref: string; text: string }[]): void {
     // Arabic alternatives must read right-to-left like the verse itself.
     body.setAttribute("dir", adapter.direction);
     button.addEventListener("click", () => {
-      showVerse(hit.ref, hit.text, { source: "Chosen by hand" });
+      showVerse(hit.ref, hit.text, { source: "Chosen by hand", translation: hit.translation });
       ui.alts.classList.remove("visible");
     });
     ui.altList.append(button);
@@ -266,6 +284,7 @@ worker.onmessage = (event: MessageEvent<FromWorker>) => {
 
     case "ready":
       ready = true;
+      translationLabel = message.translation;
       ui.mic.disabled = false;
       ui.corpus.disabled = false;
       setStatus("Tap the microphone to begin");
@@ -280,6 +299,7 @@ worker.onmessage = (event: MessageEvent<FromWorker>) => {
         confidence: result.confidence,
         ambiguous: result.ambiguousReference,
         tracked: result.tracked,
+        translation: result.verse.translation,
       });
       // Below the guess threshold the alternatives matter more than the answer.
       if (result.confidence < GUESS_BELOW || result.ambiguousReference) {
@@ -294,7 +314,7 @@ worker.onmessage = (event: MessageEvent<FromWorker>) => {
       if (message.reason === "manual") {
         const [best, ...rest] = message.hits;
         if (best) {
-          showVerse(best.ref, best.text, { source: "Found by search" });
+          showVerse(best.ref, best.text, { source: "Found by search", translation: best.translation });
           renderAlternatives(rest.slice(0, 4));
         } else {
           setStatus("Nothing matched those words.", "warn");

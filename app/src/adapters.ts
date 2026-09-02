@@ -34,6 +34,14 @@ export interface CorpusAdapter {
   normalize(text: string): string;
   /** Build a human reference from a book name and its numbers. */
   formatRef(book: string, chapter: number, verse: number): string;
+  /**
+   * Whether a secondary translation ships alongside the canonical text.
+   *
+   * The KJV has none, and that is the point rather than an omission: for an English
+   * reader the translation *is* the text. The Quran's canonical text is the Arabic, so a
+   * translation is a second thing shown beside it, never in place of it.
+   */
+  readonly hasTranslation: boolean;
 }
 
 const KJV: CorpusAdapter = {
@@ -43,6 +51,7 @@ const KJV: CorpusAdapter = {
   recognitionLanguage: "en",
   normalize: normalizeEnglish,
   formatRef: (book, chapter, verse) => `${book} ${chapter}:${verse}`,
+  hasTranslation: false,
 };
 
 const QURAN: CorpusAdapter = {
@@ -53,6 +62,7 @@ const QURAN: CorpusAdapter = {
   normalize: normalizeArabic,
   // A surah is addressed by number, so the book name carries no extra information.
   formatRef: (_book, chapter, verse) => `${chapter}:${verse}`,
+  hasTranslation: true,
 };
 
 export const ADAPTERS: Record<CorpusName, CorpusAdapter> = { kjv: KJV, quran: QURAN };

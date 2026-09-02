@@ -6,7 +6,7 @@
  * two searches per utterance, it lives here too — one message per frame rather than four.
  */
 
-import { loadCorpus, type CorpusName } from "./corpus";
+import { loadCorpus, translationLabel, type CorpusName } from "./corpus";
 import { adapterFor, type CorpusAdapter } from "./adapters";
 import { Index } from "./matcher";
 import { Tracker, type TrackResult } from "./tracker";
@@ -23,12 +23,26 @@ export type ToWorker =
 
 export type FromWorker =
   | { type: "progress"; detail: string }
-  | { type: "ready"; corpus: CorpusName; verseCount: number; termCount: number; ms: number }
+  | {
+      type: "ready";
+      corpus: CorpusName;
+      verseCount: number;
+      termCount: number;
+      ms: number;
+      /** Attribution for the shipped translation, or null when the corpus has none. */
+      translation: string | null;
+    }
   | { type: "result"; result: TrackResult | null }
   | {
       type: "hits";
       reason: SearchReason;
-      hits: { ref: string; id: number; text: string; score: number }[];
+      hits: {
+        ref: string;
+        id: number;
+        text: string;
+        score: number;
+        translation?: string;
+      }[];
     }
   | { type: "failed"; message: string };
 
@@ -46,7 +60,10 @@ self.onmessage = async (event: MessageEvent<ToWorker>) => {
         const started = performance.now();
         adapter = adapterFor(message.corpus);
         post({ type: "progress", detail: "Downloading the text" });
-        const verses = await loadCorpus(adapter.name);
+        const [verses, translation] = await Promise.all([
+          loadCorpus(adapter.name),
+          adapter.hasTranslation ? translationLabel(adapter.name) : Promise.resolve(null),
+        ]);
         post({ type: "progress", detail: `Indexing ${verses.length.toLocaleString()} verses` });
         index = new Index(verses);
         tracker = new Tracker(index);
@@ -56,6 +73,7 @@ self.onmessage = async (event: MessageEvent<ToWorker>) => {
           verseCount: verses.length,
           termCount: index.termCount,
           ms: Math.round(performance.now() - started),
+          translation,
         });
         return;
       }
@@ -80,6 +98,7 @@ self.onmessage = async (event: MessageEvent<ToWorker>) => {
             id: verse.id,
             text: verse.text,
             score,
+            ...(verse.translation ? { translation: verse.translation } : {}),
           }));
         post({ type: "hits", reason: message.reason, hits });
         return;

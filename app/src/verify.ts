@@ -14,7 +14,8 @@ import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
 import { parseCorpus, type CorpusName, type Verse } from "./corpus";
-import { normalizeEnglish } from "./normalize";
+import { normalizeEnglish, normalizeArabic } from "./normalize";
+import { adapterFor } from "./adapters";
 import { Index } from "./matcher";
 import { Tracker } from "./tracker";
 import fixtures from "./fixtures.json" with { type: "json" };
@@ -86,6 +87,37 @@ function verifyCorpus(name: CorpusName): Index {
     `${expected.termCount.toLocaleString()} distinct terms indexed`,
     index.termCount === expected.termCount,
     `got ${index.termCount}`,
+  );
+
+  // Every query's normalized form, checked against Python's.
+  //
+  // This is not redundant with the corpus digest above. The Quran's matching text ships
+  // as its own file, so the digest never exercises normalizeArabic at all — and a
+  // bidi-transposed character class that emptied every Arabic string passed the digest
+  // while breaking every spoken query. Normalization of *input* needs its own check.
+  const normalize = adapterFor(name).normalize;
+  const badNormalizations = expected.searches
+    .concat(expected.tracked)
+    .filter((item) => normalize(item.query) !== item.normalized);
+  for (const item of badNormalizations.slice(0, 3)) {
+    console.log(
+      `        ${item.query}\n` +
+        `          python: ${JSON.stringify(item.normalized)}\n` +
+        `          ts:     ${JSON.stringify(normalize(item.query))}`,
+    );
+  }
+  check(
+    `${expected.searches.length + expected.tracked.length} queries normalize identically`,
+    badNormalizations.length === 0,
+    `${badNormalizations.length} differed`,
+  );
+
+  // Normalizing must never destroy a verse outright.
+  const emptied = verses.filter((v) => v.text.trim() && !normalize(v.text).trim());
+  check(
+    "no verse normalizes to nothing",
+    emptied.length === 0,
+    emptied.length ? `${emptied.length} emptied, e.g. ${emptied[0]!.ref}` : "",
   );
 
   let searchMismatches = 0;
@@ -245,6 +277,19 @@ function verifyTrackerBehaviour(index: Index): void {
     `confidence ${duplicate?.confidence.toFixed(3)}`,
   );
 }
+
+// A direct check on the Arabic normalizer, independent of any fixture.
+console.log("\nnormalizers");
+check(
+  "Arabic normalizer keeps letters and drops harakat",
+  normalizeArabic("\u0671\u0644\u0652\u062D\u064E\u0645\u0652\u062F\u064F") === "\u0627\u0644\u062D\u0645\u062F",
+  JSON.stringify(normalizeArabic("\u0671\u0644\u0652\u062D\u064E\u0645\u0652\u062F\u064F")),
+);
+check(
+  "English normalizer lowercases and strips punctuation",
+  normalizeEnglish("The LORD is my Shepherd; I shall not want.") ===
+    "the lord is my shepherd i shall not want",
+);
 
 const kjv = verifyCorpus("kjv");
 verifyCorpus("quran");

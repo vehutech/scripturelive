@@ -305,7 +305,7 @@ def report_clips(results: list[Result], model: str) -> dict:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--spike", choices=["A", "B"], required=True)
+    parser.add_argument("--spike", choices=["A", "B", "B-heldout"], required=True)
     parser.add_argument("--model", default="base", help="whisper size: tiny/base/small")
     parser.add_argument("--limit", type=int, help="score only the first N clips")
     args = parser.parse_args()

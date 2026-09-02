@@ -14,8 +14,19 @@ import gzip
 import json
 from pathlib import Path
 
+import urllib.request
+
 from corpus import load
 from matcher import normalize_for
+
+# Pickthall, 1930. He died in 1936, so this is unambiguously public domain — which is the
+# only kind of translation that can ship, since copyrighted text cannot go to the client.
+TRANSLATIONS = {
+    "quran": {
+        "url": "https://raw.githubusercontent.com/fawazahmed0/quran-api/1/editions/eng-mohammedmarmadu.json",
+        "label": "Pickthall, 1930",
+    }
+}
 
 OUT = Path(__file__).parent.parent / "app" / "public" / "data"
 
@@ -43,6 +54,19 @@ def export(name: str) -> None:
     # file: normalizing its display text reproduces the matching text exactly.
     needs_match_file = any(normalize_for(name, v.text) != v.match_text for v in verses)
 
+    # A secondary translation, for corpora whose canonical text is not the reader's
+    # language. The KJV has none: for an English reader the translation is the text.
+    translation = TRANSLATIONS.get(name)
+    translation_lines: list[str] | None = None
+    if translation:
+        with urllib.request.urlopen(translation["url"], timeout=60) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+        by_ref = {(a["chapter"], a["verse"]): a["text"].strip() for a in payload["quran"]}
+        missing = [v.ref for v in verses if (v.chapter, v.verse) not in by_ref]
+        assert not missing, f"translation missing {len(missing)} verses, e.g. {missing[:3]}"
+        translation_lines = [by_ref[(v.chapter, v.verse)] for v in verses]
+        assert all("\n" not in line for line in translation_lines), "translation has a newline"
+
     OUT.mkdir(parents=True, exist_ok=True)
     text_path = OUT / f"{name}.txt"
     text_path.write_text("\n".join(v.text for v in verses), encoding="utf-8")
@@ -50,8 +74,19 @@ def export(name: str) -> None:
         (OUT / f"{name}.match.txt").write_text(
             "\n".join(v.match_text for v in verses), encoding="utf-8"
         )
+    if translation_lines:
+        (OUT / f"{name}.translation.txt").write_text(
+            "\n".join(translation_lines), encoding="utf-8"
+        )
     (OUT / f"{name}.idx.json").write_text(
-        json.dumps({"books": books, "hasMatchFile": needs_match_file}, ensure_ascii=False),
+        json.dumps(
+            {
+                "books": books,
+                "hasMatchFile": needs_match_file,
+                **({"translation": translation["label"]} if translation else {}),
+            },
+            ensure_ascii=False,
+        ),
         encoding="utf-8",
     )
 
@@ -74,6 +109,8 @@ def export(name: str) -> None:
     shipped = [text_path.read_bytes()]
     if needs_match_file:
         shipped.append((OUT / f"{name}.match.txt").read_bytes())
+    if translation_lines:
+        shipped.append((OUT / f"{name}.translation.txt").read_bytes())
     raw = b"".join(shipped)
     print(
         f"  {name}: {len(verses):,} verses, {len(books)} books | "
