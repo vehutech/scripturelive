@@ -57,6 +57,28 @@ def digest(values: list[str]) -> str:
     return sha.hexdigest()
 
 
+def heldout_clips() -> list[dict]:
+    """The held-out Quran transcripts, so the TypeScript port can replay the same gate.
+
+    Phase 0 and 3 measure the Python matcher against real recitation. Replaying the exact
+    transcripts through the shipping implementation is what makes those numbers describe
+    the code that runs in a browser rather than the code that produced them.
+    """
+    path = Path(__file__).parent / "data" / "results_spikeB-heldout_base.json"
+    if not path.exists():
+        return []
+    detail = json.loads(path.read_text(encoding="utf-8")).get("clips_detail", [])
+    return [
+        {
+            "ref": c["ref"],
+            "reciter": c["source"],
+            "transcript": c["transcript"],
+            "refTokens": c["ref_tokens"],
+        }
+        for c in detail
+    ]
+
+
 def build() -> dict:
     fixtures: dict = {"corpora": {}}
 
@@ -108,6 +130,7 @@ def build() -> dict:
             "tracked": tracked,
         }
 
+    fixtures["heldoutQuran"] = heldout_clips()
     return fixtures
 
 
@@ -115,6 +138,7 @@ if __name__ == "__main__":
     fixtures = build()
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(fixtures, ensure_ascii=False, indent=2), encoding="utf-8")
+    print(f"  held-out Quran clips: {len(fixtures['heldoutQuran'])}")
     for name, data in fixtures["corpora"].items():
         print(
             f"  {name}: {data['verseCount']:,} verses, {data['termCount']:,} terms, "

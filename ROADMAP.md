@@ -1,9 +1,9 @@
 # Scripture Live — Roadmap
 
-**Status:** Phases 0, 1 and 2 complete. The engine lives in [`app/`](app/) and is verified
-against the harness in [`eval/`](eval/); recognition is verified against real audio in both
-languages. `index.html` is still the deployed 155-verse prototype, and stays that way until
-microphone capture itself is exercised on a real device.
+**Status:** Phases 0 through 3 complete. The engine lives in [`app/`](app/), verified against
+the harness in [`eval/`](eval/), with recognition and microphone capture both exercised on a
+real device. `index.html` is still the deployed prototype; switching the deployment over is
+the next decision rather than the next blocker.
 
 Turning the demo into a two-corpus product — Bible and Quran — that tracks a live reader
 hands-free, with no operator clicking ahead to guess where they are going.
@@ -14,12 +14,12 @@ this file is the source of truth).
 
 | | |
 |---|---|
-| Engine | full corpora, BM25 + tracking, cross-browser |
+| Engine | both corpora, BM25 + tracking, cross-browser |
 | Target corpora | KJV 31,102 verses · Quran 6,236 ayat |
 | Stack | Vite · TypeScript · transformers.js · Vercel static |
 | Browsers | all four engines, via in-page recognition |
-| Critical path | microphone capture; recognition now verified |
-| Phases 0–2 | complete — gates met, see results below |
+| Critical path | short ayat under 10 words; tracking carries them |
+| Phases 0–3 | complete — gates met, see results below |
 
 ---
 
@@ -266,9 +266,10 @@ mangled, exactly the error class the matcher exists to absorb — and resolves t
 with 23:2 second. Arabic transcribes a recitation of 1:1 as بسم الله الرحمن الرحيم, exactly its
 ground truth.
 
-**Still unverified: microphone capture.** `getUserMedia` and the AudioWorklet have never run
-against a live device — everything downstream of the audio now has. Until capture is
-exercised, `index.html` stays deployed rather than the app.
+**Since verified end to end on a real device.** Microphone capture, the AudioWorklet, model
+load and recognition all run. Getting there surfaced one more defect: switching English to the
+English-only model left `language` and `task` in the generation options, which those models
+reject outright, so every pass failed the moment audio started flowing.
 
 ### Phase 2 — Abstract the corpus (~1 week)
 
@@ -323,6 +324,39 @@ Scope here depends entirely on what Phase 0 measured. Everything else is ready f
 
 **Gate:** correct ayah identified on held-out EveryAyah clips across at least three reciters —
 different voices, not three takes of one.
+
+#### Result — gate met
+
+120 clips from a sample offset half a stride from the development set, so it shares no ayah
+with it, across Alafasy, Husary and Abdul Basit. Measured through the shipping TypeScript,
+replaying the exact transcripts the Python harness scored, and reproducing its numbers.
+
+| ground-truth length | n | acquire | tracked |
+|---|---|---|---|
+| 1–4 words | 21 | 57.1% | 85.7% |
+| 5–9 | 36 | 86.1% | 91.7% |
+| 10–19 | 48 | 93.8% | **100%** |
+| 20+ | 15 | **100%** | **100%** |
+| **all** | **120** | **85.8%** | **95.0%** |
+
+Word error rate was 50% median. Accuracy is flat across reciters (85.0%, 85.0%, 87.5%), and
+it generalizes: tracked accuracy on held-out clips is 95.0% against 94.2% on the development
+set. The length pattern holds — everything from ten words up is identified perfectly once
+tracking has a position, and the failures remain concentrated in short ayat.
+
+**Also shipped:** Pickthall's 1930 translation, public domain since 2006, as a separate
+line-per-ayah file shown below the Arabic with attribution. Whether a corpus carries a
+translation is an adapter fact; the KJV has none, and that is the point rather than an
+omission.
+
+**One bug worth recording.** Extracting the normalizers into their own module let bidi
+reordering transpose two characters in the Arabic strip class, widening it to cover the whole
+alphabet. `normalizeArabic` returned an empty string for every input, and the class looked
+correct on screen. The whole suite still passed, because the Quran's matching text ships as
+its own file and the corpus digest never exercises that normalizer — the only thing it still
+handles is the spoken or typed query, and nothing asserted on that. Query normalization is now
+checked against the Python fixtures, no verse may normalize to nothing, and every Arabic
+codepoint in the module is an escape rather than a literal.
 
 ### Phase 4 — Product shell (ongoing)
 

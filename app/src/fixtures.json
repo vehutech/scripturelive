@@ -562,5 +562,727 @@
         }
       ]
     }
-  }
+  },
+  "heldoutQuran": [
+    {
+      "ref": "2:71",
+      "reciter": "Alafasy_128kbps",
+      "transcript": "17. قال إنه يقول إنها بقرة الله لون تسيه الأرض ولا تسف الحرث مسلمة لا شي تفيها 17. قال الآن جئتب الحق فذبحها وما كادوا يفعلون",
+      "refTokens": 24
+    },
+    {
+      "ref": "2:226",
+      "reciter": "Alafasy_128kbps",
+      "transcript": "للذين يقلون من نساءهم تربص أربعة أشهر فإن فاء فإن الله غفر وحيم",
+      "refTokens": 13
+    },
+    {
+      "ref": "3:95",
+      "reciter": "Alafasy_128kbps",
+      "transcript": "14. قل صدق الله فتبعوا من لتأبرعه محنيف وما كان من المشركين",
+      "refTokens": 11
+    },
+    {
+      "ref": "4:50",
+      "reciter": "Alafasy_128kbps",
+      "transcript": "أوظر كيف يفترون على الله الكذب وكفابه إسمم مبينة",
+      "refTokens": 10
+    },
+    {
+      "ref": "5:29",
+      "reciter": "Alafasy_128kbps",
+      "transcript": "إني أريد أن تبور أبي إثمي وإثمك فتكون من أصحاب نار وذلك جزاء الظالمين",
+      "refTokens": 13
+    },
+    {
+      "ref": "6:64",
+      "reciter": "Alafasy_128kbps",
+      "transcript": "قل الله ينجيكم منها ومن كل كر بناس ما أنتم تشركون",
+      "refTokens": 10
+    },
+    {
+      "ref": "7:54",
+      "reciter": "Alafasy_128kbps",
+      "transcript": "25. إن ربكم الله الذي خلق السماوات والأرض في ستة آيام ثم استواء على العرش 30. ثم استواء على العرش يوش ليلنهار يقول به حثيثا و الشمسة والقمر وان نجوم مسخرات بأمره 30. آلهم الخلق والأمر تبارك الله رب العالمين",
+      "refTokens": 32
+    },
+    {
+      "ref": "8:3",
+      "reciter": "Alafasy_128kbps",
+      "transcript": "الذين يقيمون الصلاة ومنما رزقنا هم ينفقون",
+      "refTokens": 6
+    },
+    {
+      "ref": "9:83",
+      "reciter": "Alafasy_128kbps",
+      "transcript": "25. فإررجعك الله إلى طائفة منهم فستأذنك للخروج فقل لن تخرجوا فقل لن تخرجوا معي أبدا ولا تقاتل معي عدوه 25. إنكم رضيت بالقعود أول مرة فقعدوا مع الخالفين",
+      "refTokens": 25
+    },
+    {
+      "ref": "10:109",
+      "reciter": "Alafasy_128kbps",
+      "transcript": "والتبعما يوحى إليك وصبر حتى يحكم الله وهو خير الحاكنين",
+      "refTokens": 11
+    },
+    {
+      "ref": "12:32",
+      "reciter": "Alafasy_128kbps",
+      "transcript": "قالت فذلك الن الذين تننيفه ولقد راوته عن نفسه فستعصم ولإن لم يفعل ما أمره لا يسجنًا ولا يكون من الصغرين",
+      "refTokens": 19
+    },
+    {
+      "ref": "14:33",
+      "reciter": "Alafasy_128kbps",
+      "transcript": "و سخفر لكم الشمس والخمر دائبين و سخفر لكم الليل والنهاب",
+      "refTokens": 9
+    },
+    {
+      "ref": "16:37",
+      "reciter": "Alafasy_128kbps",
+      "transcript": "إن تحرص على هداهم فإن الله لا يهدي ما يضل ومالهم من ناصرين",
+      "refTokens": 14
+    },
+    {
+      "ref": "17:64",
+      "reciter": "Alafasy_128kbps",
+      "transcript": "وستفزز من استطعت منهم بصوتك وأجل بعليهم بخيلك ورجلك وشارككم وشارككم في الأموال والأولاد وعدهم وما يعدهم الشيطان إلا وراء",
+      "refTokens": 19
+    },
+    {
+      "ref": "18:108",
+      "reciter": "Alafasy_128kbps",
+      "transcript": "خالدين فيها لا يبقون عنها حولا",
+      "refTokens": 6
+    },
+    {
+      "ref": "20:55",
+      "reciter": "Alafasy_128kbps",
+      "transcript": "منها خلقناكم وفيها نعيدكم ومنها نخرجكم ومنها نخرجكم تارة أخرى",
+      "refTokens": 8
+    },
+    {
+      "ref": "21:75",
+      "reciter": "Alafasy_128kbps",
+      "transcript": "وأدخناه في رحمةنا إنه من الصالحين",
+      "refTokens": 6
+    },
+    {
+      "ref": "23:40",
+      "reciter": "Alafasy_128kbps",
+      "transcript": "قال عنما قليل لا يسبحنا نادمين",
+      "refTokens": 5
+    },
+    {
+      "ref": "25:13",
+      "reciter": "Alafasy_128kbps",
+      "transcript": "وإذا ألطوا منها مكان ضيقا مقرنين دعوهنا لك سبورة",
+      "refTokens": 9
+    },
+    {
+      "ref": "26:91",
+      "reciter": "Alafasy_128kbps",
+      "transcript": "وبرزة الجحيم للغاوم",
+      "refTokens": 3
+    },
+    {
+      "ref": "27:19",
+      "reciter": "Alafasy_128kbps",
+      "transcript": "29. فتبس مضاهك من قولها وقال رب اوزعني وقال رب اوزعني أن أشكر نعمتك التي أن عمت علي وعلى ووليدي وأن أعمل صالحان ترضاه وأدخلني وأدخني برحمة كفي عبادك الصالحين",
+      "refTokens": 24
+    },
+    {
+      "ref": "28:81",
+      "reciter": "Alafasy_128kbps",
+      "transcript": "فخسفنا به وبداره الأرض فما كان له من فأتي يصرونه من دون الله وما كان من المنتصري",
+      "refTokens": 17
+    },
+    {
+      "ref": "31:19",
+      "reciter": "Alafasy_128kbps",
+      "transcript": "وقصد في مشيك ورضب من صوتك إن أنكر الأصوات لصوت الحمير",
+      "refTokens": 11
+    },
+    {
+      "ref": "34:37",
+      "reciter": "Alafasy_128kbps",
+      "transcript": "25. وما أموالكم ولا أولادكم بالتي تقدربكم عندنا زلفاء الله 25. إلا من آمن وعمل صالحا فأولائك لهم جزاء أبعف بما عملوا فأولائك لهم جزاء أبعف بما عملوا وهم في الغرفات آمنون",
+      "refTokens": 23
+    },
+    {
+      "ref": "37:10",
+      "reciter": "Alafasy_128kbps",
+      "transcript": "إلا من خطف الخطفة فأتبعه شهاب ساقب",
+      "refTokens": 7
+    },
+    {
+      "ref": "37:165",
+      "reciter": "Alafasy_128kbps",
+      "transcript": "وإننا لنحن صافهم",
+      "refTokens": 3
+    },
+    {
+      "ref": "39:50",
+      "reciter": "Alafasy_128kbps",
+      "transcript": "قد قال هل الذين من قبلهم فما أرما عنهم ما كانوا يكسبون",
+      "refTokens": 11
+    },
+    {
+      "ref": "41:45",
+      "reciter": "Alafasy_128kbps",
+      "transcript": "12. ولقد آتين موصل كتاب فخط لففيه 12. ولولا كلمة سبقت من ربك لقض يبينهم 12. وإنهم لفي شك منهم ريب",
+      "refTokens": 18
+    },
+    {
+      "ref": "44:4",
+      "reciter": "Alafasy_128kbps",
+      "transcript": "فيها يفوق كل أمر حكيم",
+      "refTokens": 5
+    },
+    {
+      "ref": "47:28",
+      "reciter": "Alafasy_128kbps",
+      "transcript": "5. ذلك بأنه متبعما أسخط الله وكره رضوانه فأحبة أعمالهم",
+      "refTokens": 10
+    },
+    {
+      "ref": "51:53",
+      "reciter": "Alafasy_128kbps",
+      "transcript": "أتوى صوبه بلهم قوموا طعوم",
+      "refTokens": 6
+    },
+    {
+      "ref": "54:37",
+      "reciter": "Alafasy_128kbps",
+      "transcript": "1. ولقد راوته عن ضيفه فطمسنا أعيناهم فلوقوا عذابي ونذر",
+      "refTokens": 9
+    },
+    {
+      "ref": "56:59",
+      "reciter": "Alafasy_128kbps",
+      "transcript": "أنتم تخلقونه أن نحن الخالقون",
+      "refTokens": 5
+    },
+    {
+      "ref": "63:5",
+      "reciter": "Alafasy_128kbps",
+      "transcript": "وإذا قيل لهم تعالوا يستوفر لكم رسول الله لو ورؤوسهم لو ورؤوسهم ورأيتهم يصدون وهم مستكبرون",
+      "refTokens": 14
+    },
+    {
+      "ref": "69:25",
+      "reciter": "Alafasy_128kbps",
+      "transcript": "وأنما من اوتي كتابه بشماله فيقول يا ليتني لم اوتي كتابه",
+      "refTokens": 11
+    },
+    {
+      "ref": "74:8",
+      "reciter": "Alafasy_128kbps",
+      "transcript": "فإذا نقر فينا قور",
+      "refTokens": 4
+    },
+    {
+      "ref": "77:36",
+      "reciter": "Alafasy_128kbps",
+      "transcript": "ولا يؤذن لهم فا يعتذرون",
+      "refTokens": 4
+    },
+    {
+      "ref": "81:13",
+      "reciter": "Alafasy_128kbps",
+      "transcript": "وإلا الجنة غزل فتح",
+      "refTokens": 3
+    },
+    {
+      "ref": "88:1",
+      "reciter": "Alafasy_128kbps",
+      "transcript": "هل أتاك حديث الظعاشية",
+      "refTokens": 4
+    },
+    {
+      "ref": "96:17",
+      "reciter": "Alafasy_128kbps",
+      "transcript": "فل يدعون آديه",
+      "refTokens": 2
+    },
+    {
+      "ref": "2:71",
+      "reciter": "Husary_128kbps",
+      "transcript": "17. قال إنه يقول إنها بقرط الله ذلك لن تثير الأرض ولا تسقي الحرف مسلمة الله يتفيذ 17. قالوا الاند التفيل حقا فذبحوها وما كادوا يفعلون",
+      "refTokens": 24
+    },
+    {
+      "ref": "2:226",
+      "reciter": "Husary_128kbps",
+      "transcript": "1. للذين يؤلون من نساء إمتر بث أربعة أشكر فإن فاء فإن الله وفور الرحيم",
+      "refTokens": 13
+    },
+    {
+      "ref": "3:95",
+      "reciter": "Husary_128kbps",
+      "transcript": "قرل صدق الله فتبعوا من لا تأيض راهي محاني فى وما كان من المشركين",
+      "refTokens": 11
+    },
+    {
+      "ref": "4:50",
+      "reciter": "Husary_128kbps",
+      "transcript": "ونظر كيف يفترون على الله الكذب وكفابه إثمن مبينة",
+      "refTokens": 10
+    },
+    {
+      "ref": "5:29",
+      "reciter": "Husary_128kbps",
+      "transcript": "2. إن لي أريد أن تغو أبي إثمي وإثمك فتكون من أصحاب النار وذلك جزاء العلمين",
+      "refTokens": 13
+    },
+    {
+      "ref": "6:64",
+      "reciter": "Husary_128kbps",
+      "transcript": "15. قل الله ينجيكم منها ومن كل كرب ثم أنتم تشنكون",
+      "refTokens": 10
+    },
+    {
+      "ref": "7:54",
+      "reciter": "Husary_128kbps",
+      "transcript": "25. إن ربكم الله الذي خلق السماوات والأرض في ستة آيام ثم ستوال على العرشيوش اللي لن آر يطلبه حفيثا 25. يوش اللي لن آر يطلبه حفيثا وشنسا والقمرة والنجوم مسخرات بأمره 25. هل هو الخلق والأمر؟ 25. تبارك الله رب العالمين",
+      "refTokens": 32
+    },
+    {
+      "ref": "8:3",
+      "reciter": "Husary_128kbps",
+      "transcript": "7. الذين يكيمون الصلاة ومن ما رزقناهم ينفقون",
+      "refTokens": 6
+    },
+    {
+      "ref": "9:83",
+      "reciter": "Husary_128kbps",
+      "transcript": "فإررجعك الله إلى طائفة منهم فستأذنوك للخرود فقول لان تخرجوا معي أبدا ولن تقاطلوا معي عدوا إنكم رضيت بالقعود أول مرة فقعدوا مع الخالفين",
+      "refTokens": 25
+    },
+    {
+      "ref": "10:109",
+      "reciter": "Husary_128kbps",
+      "transcript": "وَتَبِعْمَا يُوْحَاءِ لَيْكَ وَصْبِرْحَتْ تَا يَحْكُمَ اللَّهُ وَهُوْخَيْرُ الْحَاكِمِين",
+      "refTokens": 11
+    },
+    {
+      "ref": "12:32",
+      "reciter": "Husary_128kbps",
+      "transcript": "14. قالت فذلك الناذي لمتنني فيه 14. ولقد راواته عن نفسي فستعصم 14. وللم يفعل ما أمره لا يسجنًا ولا يكون من الصغيرين",
+      "refTokens": 19
+    },
+    {
+      "ref": "14:33",
+      "reciter": "Husary_128kbps",
+      "transcript": "و سخر علىكم شمسة القمر دائبين و سخر لكم الليل والنهار",
+      "refTokens": 9
+    },
+    {
+      "ref": "16:37",
+      "reciter": "Husary_128kbps",
+      "transcript": "5. إن تحرص علىه داهم فإن الله لا يهدي ما يضل وما لهم من ناثرين",
+      "refTokens": 14
+    },
+    {
+      "ref": "17:64",
+      "reciter": "Husary_128kbps",
+      "transcript": "وستفزز من استطعت منهم بصوتك وأجلب عليهم بخيلك ورجلك وشارك ومفر الأموال والأولاد وعيد جم وما يعيده مشيطان إلا أورورا",
+      "refTokens": 19
+    },
+    {
+      "ref": "18:108",
+      "reciter": "Husary_128kbps",
+      "transcript": "خاددين فيها لا يبغون عنها حولا",
+      "refTokens": 6
+    },
+    {
+      "ref": "20:55",
+      "reciter": "Husary_128kbps",
+      "transcript": "منها خلقناكم وفيها المعيدكم ومنها نخريكم تارتاً أفضراء",
+      "refTokens": 8
+    },
+    {
+      "ref": "21:75",
+      "reciter": "Husary_128kbps",
+      "transcript": "وأدخلناه في رحمتنا إنه من الصالحين",
+      "refTokens": 6
+    },
+    {
+      "ref": "23:40",
+      "reciter": "Husary_128kbps",
+      "transcript": "قال عما قليل لا يسبح نناديمين",
+      "refTokens": 5
+    },
+    {
+      "ref": "25:13",
+      "reciter": "Husary_128kbps",
+      "transcript": "وإذا أرقوا منها مكان ضيقا مقلنين دعوهنا لكثورا",
+      "refTokens": 9
+    },
+    {
+      "ref": "26:91",
+      "reciter": "Husary_128kbps",
+      "transcript": "وضل رزة الجحيم للاعين",
+      "refTokens": 3
+    },
+    {
+      "ref": "27:19",
+      "reciter": "Husary_128kbps",
+      "transcript": "13. فتبس مضاحك من قوله وأقال رب أهوز عني أن أشكرني عمتك التي أن عمت على ريا وعلى وآل دي وأن أعمل صالح وأن أعمل صالح أن تضاه وأدخلني برحمتك في عبادك الصالحين",
+      "refTokens": 24
+    },
+    {
+      "ref": "28:81",
+      "reciter": "Husary_128kbps",
+      "transcript": "25. فخسفنا بي وبداره الأرض فما كان لهو من فيأتي عن صرونه من دونر الله 25. فما كان لهو من فيأتي عن صرونه من دونر الله وما كان من المنتصرين",
+      "refTokens": 17
+    },
+    {
+      "ref": "31:19",
+      "reciter": "Husary_128kbps",
+      "transcript": "14. وقصد في مشيك ورضب من صوتك إن أنكر الأصوات لصوت الحمير",
+      "refTokens": 11
+    },
+    {
+      "ref": "34:37",
+      "reciter": "Husary_128kbps",
+      "transcript": "12. وما أموالكم ولا أولادكم بالتي تقربكم عند نازل فائل لأمن أمن وعمل صوالحا 12. إلا من أمن وعمل صوالحا فأولاك لهم جزاء الضع فيما عملوا وهم في الغرفات أمنون",
+      "refTokens": 23
+    },
+    {
+      "ref": "37:10",
+      "reciter": "Husary_128kbps",
+      "transcript": "إلا من خطف الخطفة فأتبعه شهاب الثاقب",
+      "refTokens": 7
+    },
+    {
+      "ref": "37:165",
+      "reciter": "Husary_128kbps",
+      "transcript": "وإننا لنحن الصحول",
+      "refTokens": 3
+    },
+    {
+      "ref": "39:50",
+      "reciter": "Husary_128kbps",
+      "transcript": "4. قد قال هل الذين من قبلهم فما أغنى عنهم ما كانوا يكسبون",
+      "refTokens": 11
+    },
+    {
+      "ref": "41:45",
+      "reciter": "Husary_128kbps",
+      "transcript": "12. ولقد آتينه سلكتاب فاختل ففيه 12. ولو لا كلمة سبقة من ربك لقب يبينهم 12. وإنهم لفي شاك منه مريب",
+      "refTokens": 18
+    },
+    {
+      "ref": "44:4",
+      "reciter": "Husary_128kbps",
+      "transcript": "في ذا يفرق قرل أمر الحكيم",
+      "refTokens": 5
+    },
+    {
+      "ref": "47:28",
+      "reciter": "Husary_128kbps",
+      "transcript": "5. ذلك بأنهم التبعوا ما أسخط الله وكريه رغوانه فأحبط أعمالهم",
+      "refTokens": 10
+    },
+    {
+      "ref": "51:53",
+      "reciter": "Husary_128kbps",
+      "transcript": "أتواقى صغبه بلهم قومون طغول",
+      "refTokens": 6
+    },
+    {
+      "ref": "54:37",
+      "reciter": "Husary_128kbps",
+      "transcript": "8. ولقد را ودوه عن ضيفه فتمسنا أعيناهم فذوك عذابي ونذر",
+      "refTokens": 9
+    },
+    {
+      "ref": "56:59",
+      "reciter": "Husary_128kbps",
+      "transcript": "أنتم تخلقونه أن نحن الخاري قول",
+      "refTokens": 5
+    },
+    {
+      "ref": "63:5",
+      "reciter": "Husary_128kbps",
+      "transcript": "وإذا كيل لهم تعالوا يستعفذ لكم رسول الله لووروسهم ورأيتهم يصدون وهم مستك برود",
+      "refTokens": 14
+    },
+    {
+      "ref": "69:25",
+      "reciter": "Husary_128kbps",
+      "transcript": "وَأَمْمَا مَنْ اُوْتِ يَكِتَابَهُ بِشِمَالِهِ فَيَقُولُ يَالَيْتَنِيْلَمْ اُوْتَكِتَابِيَه",
+      "refTokens": 11
+    },
+    {
+      "ref": "74:8",
+      "reciter": "Husary_128kbps",
+      "transcript": "فإذا نترافنا قور",
+      "refTokens": 4
+    },
+    {
+      "ref": "77:36",
+      "reciter": "Husary_128kbps",
+      "transcript": "12. ولا يؤذن لهم فايا التذيرون",
+      "refTokens": 4
+    },
+    {
+      "ref": "81:13",
+      "reciter": "Husary_128kbps",
+      "transcript": "وإذا الجنة أزلفت",
+      "refTokens": 3
+    },
+    {
+      "ref": "88:1",
+      "reciter": "Husary_128kbps",
+      "transcript": "هل أثاك حديث الراشيث؟",
+      "refTokens": 4
+    },
+    {
+      "ref": "96:17",
+      "reciter": "Husary_128kbps",
+      "transcript": "فالياده نادية",
+      "refTokens": 2
+    },
+    {
+      "ref": "2:71",
+      "reciter": "Abdul_Basit_Murattal_192kbps",
+      "transcript": "10. قال إنه يقول إنها بقرط الله ذلول تثير الأرض ولا تسط الحرف مسلمة الله يتفيقه 10. قالوا الآن جدا بالحق فذا بحلوظه وما كادوا يفعله",
+      "refTokens": 24
+    },
+    {
+      "ref": "2:226",
+      "reciter": "Abdul_Basit_Murattal_192kbps",
+      "transcript": "3. للذين يلون من نساءهم ترغب صؤربعة أشهور فإن فاء فإن الله غفر رحيم",
+      "refTokens": 13
+    },
+    {
+      "ref": "3:95",
+      "reciter": "Abdul_Basit_Murattal_192kbps",
+      "transcript": "14. قل صدق الله فتذبعوا من لتإبراه محنيف وما كان مني مشريكين",
+      "refTokens": 11
+    },
+    {
+      "ref": "4:50",
+      "reciter": "Abdul_Basit_Murattal_192kbps",
+      "transcript": "أوظر كيف يفترون على الله الكذب وكفابه إثم مموين",
+      "refTokens": 10
+    },
+    {
+      "ref": "5:29",
+      "reciter": "Abdul_Basit_Murattal_192kbps",
+      "transcript": "5. إني أريد أن تهو أبي إفمي وإفمك فتكون من أصحاب النار وذلك جزاء أفواري من",
+      "refTokens": 13
+    },
+    {
+      "ref": "6:64",
+      "reciter": "Abdul_Basit_Murattal_192kbps",
+      "transcript": "17.قول الله ينجيكم منها ومن كل كرب ثم أنتم تشرفون",
+      "refTokens": 10
+    },
+    {
+      "ref": "7:54",
+      "reciter": "Abdul_Basit_Murattal_192kbps",
+      "transcript": "25. إن ربكم الله الذي خلق السماوات والأرض في ستتأيئ من ثم استوى على العرش يوشل لنهار يطلبه حفاثا 25. يوشل لنهار يطلبه حفاثا والشنسة القمر عن نجوم مسخرات بأمره 25. إن ربكم الله الذي خلق السماوات والأمر تبارك الله رب العالمي",
+      "refTokens": 32
+    },
+    {
+      "ref": "8:3",
+      "reciter": "Abdul_Basit_Murattal_192kbps",
+      "transcript": "11. الذين يُقيمون الصدات عم مرزقنا هم يُفقوا",
+      "refTokens": 6
+    },
+    {
+      "ref": "9:83",
+      "reciter": "Abdul_Basit_Murattal_192kbps",
+      "transcript": "25. فإن رجعك الله إلى طائفة منهم فستأثنوك للخرج فقر لن تخرج معي أبدا ولا تقاتل معي عدوة 25. إنكم رضيتوا بالقود أول مرة فقود مع الخالفين",
+      "refTokens": 25
+    },
+    {
+      "ref": "10:109",
+      "reciter": "Abdul_Basit_Murattal_192kbps",
+      "transcript": "والدفع ما يوحى إليك وصبد حتى يحكم الله وهو خير الحاكمي",
+      "refTokens": 11
+    },
+    {
+      "ref": "12:32",
+      "reciter": "Abdul_Basit_Murattal_192kbps",
+      "transcript": "15. قالت فذلك أن الذي لمتنني فيه, ولقد راوته عن نفسه فستعصم ولا إلا يفعل ما أمه لا يسجنًا ولا يكون من الصغريد",
+      "refTokens": 19
+    },
+    {
+      "ref": "14:33",
+      "reciter": "Abdul_Basit_Murattal_192kbps",
+      "transcript": "وستخر لكم الشمس والقمر دائبين وستخر لكم الليل ونهار",
+      "refTokens": 9
+    },
+    {
+      "ref": "16:37",
+      "reciter": "Abdul_Basit_Murattal_192kbps",
+      "transcript": "5. إن تحرص على هداهم فإن الله لا يهدي ما يضل ومالهم من نصريب",
+      "refTokens": 14
+    },
+    {
+      "ref": "17:64",
+      "reciter": "Abdul_Basit_Murattal_192kbps",
+      "transcript": "وستفزز من استقعت منهم بصوتك وأجلب عليهم بخينك ورجلك وشارككم في الأموال والأولاد وعذهم وما يعيدهم الشيطان إلا رورا",
+      "refTokens": 19
+    },
+    {
+      "ref": "18:108",
+      "reciter": "Abdul_Basit_Murattal_192kbps",
+      "transcript": "ولدين في جدا يبقون عنها حولا",
+      "refTokens": 6
+    },
+    {
+      "ref": "20:55",
+      "reciter": "Abdul_Basit_Murattal_192kbps",
+      "transcript": "من ها خلطناكم وفي ذال عيدكم ومن ها نخرجكم تارتل اخرى",
+      "refTokens": 8
+    },
+    {
+      "ref": "21:75",
+      "reciter": "Abdul_Basit_Murattal_192kbps",
+      "transcript": "8. وأدخلناه في رحمةنا إنه من الصالحيب",
+      "refTokens": 6
+    },
+    {
+      "ref": "23:40",
+      "reciter": "Abdul_Basit_Murattal_192kbps",
+      "transcript": "10. قال عن ما قريل الله يصبحنا ناثمين",
+      "refTokens": 5
+    },
+    {
+      "ref": "25:13",
+      "reciter": "Abdul_Basit_Murattal_192kbps",
+      "transcript": "وإذا ألقوا منها مكان ضيقا مقرن ندعوا هنا لكثورة",
+      "refTokens": 9
+    },
+    {
+      "ref": "26:91",
+      "reciter": "Abdul_Basit_Murattal_192kbps",
+      "transcript": "وبر رزة الجحيم للغاوين",
+      "refTokens": 3
+    },
+    {
+      "ref": "27:19",
+      "reciter": "Abdul_Basit_Murattal_192kbps",
+      "transcript": "17. فتبس مضاحك من قوله وقال رب اوزعني أن أشكرني عمتك التي أن عمت على يوالد يوال أن أعمل صار حال ترضاه وأن أعمل صار حال ترضاه وأدخلني برحمتك في عبادك الصالحين",
+      "refTokens": 24
+    },
+    {
+      "ref": "28:81",
+      "reciter": "Abdul_Basit_Murattal_192kbps",
+      "transcript": "1. فخصفنا به وبداره الأرض فما كان له من فأتي يصرونه من دون الله وما كان من المنتصري",
+      "refTokens": 17
+    },
+    {
+      "ref": "31:19",
+      "reciter": "Abdul_Basit_Murattal_192kbps",
+      "transcript": "وقصد في مشيك وقضب من صوتك إن أنكرة الأصوات لصوت الحميب",
+      "refTokens": 11
+    },
+    {
+      "ref": "34:37",
+      "reciter": "Abdul_Basit_Murattal_192kbps",
+      "transcript": "12. وما أموالكم ولا أولادكم بالتي تقرивكم إن تنازل فى إلا من أمن عامل صالحاء 12. إلا من أمن عامل صالحاء فأولئك لهم دزاء ضعف بما عنه ونفل غروفات آلين",
+      "refTokens": 23
+    },
+    {
+      "ref": "37:10",
+      "reciter": "Abdul_Basit_Murattal_192kbps",
+      "transcript": "إلا من خطف الخطفات بأتفعه شهاب تارك في بي",
+      "refTokens": 7
+    },
+    {
+      "ref": "37:165",
+      "reciter": "Abdul_Basit_Murattal_192kbps",
+      "transcript": "وإننا لنحل الثافو",
+      "refTokens": 3
+    },
+    {
+      "ref": "39:50",
+      "reciter": "Abdul_Basit_Murattal_192kbps",
+      "transcript": "قد قال ذلك الذين من قبلهم فما أغنا عنهم ما كانوا يكسبوا ذ",
+      "refTokens": 11
+    },
+    {
+      "ref": "41:45",
+      "reciter": "Abdul_Basit_Murattal_192kbps",
+      "transcript": "12. ولقد آتينا موسى الكتاب فاختني ففيه ولولا كلمة سبقت من ربك لقظ يبينه وإنهم لفيشك منه مريب",
+      "refTokens": 18
+    },
+    {
+      "ref": "44:4",
+      "reciter": "Abdul_Basit_Murattal_192kbps",
+      "transcript": "في لا يفرق كل أمر حكيم",
+      "refTokens": 5
+    },
+    {
+      "ref": "47:28",
+      "reciter": "Abdul_Basit_Murattal_192kbps",
+      "transcript": "3. ذلك بأنهم التبعوما أسخط الله وكريه رضوانه فأحبط أعمالهم",
+      "refTokens": 10
+    },
+    {
+      "ref": "51:53",
+      "reciter": "Abdul_Basit_Murattal_192kbps",
+      "transcript": "أتواء صوبي بالهم قوم طور",
+      "refTokens": 6
+    },
+    {
+      "ref": "54:37",
+      "reciter": "Abdul_Basit_Murattal_192kbps",
+      "transcript": "ولقد روا دوه عن ضيفه فطمسنا أعيونهم فذوطوا عذابي ونزو",
+      "refTokens": 9
+    },
+    {
+      "ref": "56:59",
+      "reciter": "Abdul_Basit_Murattal_192kbps",
+      "transcript": "أأن تم تخلقوا نهو أم نحن الخالقون",
+      "refTokens": 5
+    },
+    {
+      "ref": "63:5",
+      "reciter": "Abdul_Basit_Murattal_192kbps",
+      "transcript": "وإذا قيل لهم تعالوا يستوفر لكم رسول الله لو ورؤوسهم ورأيتهم يصدون وهم مستكبرون",
+      "refTokens": 14
+    },
+    {
+      "ref": "69:25",
+      "reciter": "Abdul_Basit_Murattal_192kbps",
+      "transcript": "وأنما من اوت يا كتابه بشماله فا يقول يا ليتني لم اوت يا كتاب ياه",
+      "refTokens": 11
+    },
+    {
+      "ref": "74:8",
+      "reciter": "Abdul_Basit_Murattal_192kbps",
+      "transcript": "فإذا نطر في النقور",
+      "refTokens": 4
+    },
+    {
+      "ref": "77:36",
+      "reciter": "Abdul_Basit_Murattal_192kbps",
+      "transcript": "ولا يؤذن لهم فا يعتذرون",
+      "refTokens": 4
+    },
+    {
+      "ref": "81:13",
+      "reciter": "Abdul_Basit_Murattal_192kbps",
+      "transcript": "وإذا الجنة عزليفت",
+      "refTokens": 3
+    },
+    {
+      "ref": "88:1",
+      "reciter": "Abdul_Basit_Murattal_192kbps",
+      "transcript": "هل اتاك حديث الغاشية",
+      "refTokens": 4
+    },
+    {
+      "ref": "96:17",
+      "reciter": "Abdul_Basit_Murattal_192kbps",
+      "transcript": "بل يدعون ديان",
+      "refTokens": 2
+    }
+  ]
 }

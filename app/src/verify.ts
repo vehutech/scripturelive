@@ -291,10 +291,83 @@ check(
     "the lord is my shepherd i shall not want",
 );
 
+/**
+ * Replay the held-out Quran recitation through the shipping matcher.
+ *
+ * This is the Phase 3 gate. The clips are a disjoint sample from the one the matcher was
+ * developed against, transcribed from real recitation by three different reciters, and
+ * these are the exact transcripts the Python harness scored — so agreement here means the
+ * measured numbers describe the code that runs in a browser.
+ */
+function verifyHeldOut(index: Index): void {
+  console.log("\nheld-out Quran — Phase 3 gate");
+  const clips = fixtures.heldoutQuran;
+  if (clips.length === 0) {
+    console.log("  skip  no held-out fixture (run: python3 eval/evaluate.py --spike B-heldout)");
+    return;
+  }
+
+  const byRef = new Map(index.verses.map((v) => [v.ref, v]));
+  const buckets: Record<string, { acquire: number; tracked: number; n: number }> = {};
+  let top1 = 0;
+  let top5 = 0;
+  let tracked1 = 0;
+
+  for (const clip of clips) {
+    const truth = byRef.get(clip.ref)!;
+    const query = normalizeArabic(clip.transcript);
+    const hits = index.search(query, { topK: 5 });
+    const trackedHits = index.search(query, { topK: 1, near: Math.max(0, truth.id - 1) });
+
+    const isTop1 = hits[0]?.verse.id === truth.id;
+    const isTracked = trackedHits[0]?.verse.id === truth.id;
+    if (isTop1) top1++;
+    if (hits.some((h) => h.verse.id === truth.id)) top5++;
+    if (isTracked) tracked1++;
+
+    const label =
+      clip.refTokens <= 4 ? "1-4" : clip.refTokens <= 9 ? "5-9" : clip.refTokens <= 19 ? "10-19" : "20+";
+    const bucket = (buckets[label] ??= { acquire: 0, tracked: 0, n: 0 });
+    bucket.n++;
+    if (isTop1) bucket.acquire++;
+    if (isTracked) bucket.tracked++;
+  }
+
+  const reciters = new Set(clips.map((c) => c.reciter)).size;
+  console.log(`        ${clips.length} clips, ${reciters} reciters`);
+  console.log("        by ground-truth length:");
+  for (const label of ["1-4", "5-9", "10-19", "20+"]) {
+    const bucket = buckets[label];
+    if (!bucket) continue;
+    console.log(
+      `          ${label.padEnd(6)} n=${String(bucket.n).padEnd(4)}` +
+        ` acquire ${((bucket.acquire / bucket.n) * 100).toFixed(1).padStart(5)}%` +
+        `   tracked ${((bucket.tracked / bucket.n) * 100).toFixed(1).padStart(5)}%`,
+    );
+  }
+
+  const acquire = top1 / clips.length;
+  const tracked = tracked1 / clips.length;
+  console.log(
+    `        acquire top-1 ${(acquire * 100).toFixed(1)}%` +
+      `  top-5 ${((top5 / clips.length) * 100).toFixed(1)}%` +
+      `  tracked ${(tracked * 100).toFixed(1)}%`,
+  );
+
+  // The Python harness measured 85.8% acquire and 95.0% tracked on these same clips.
+  check("matches the Python harness on acquire", Math.abs(acquire - 0.858) < 0.02);
+  check("matches the Python harness on tracked", Math.abs(tracked - 0.95) < 0.02);
+  check(
+    `Phase 3 gate — ayah identified across ${reciters} reciters on held-out clips`,
+    reciters >= 3 && tracked >= 0.9,
+  );
+}
+
 const kjv = verifyCorpus("kjv");
-verifyCorpus("quran");
+const quran = verifyCorpus("quran");
 verifyTrackerBehaviour(kjv);
 verifyTracking(kjv);
+verifyHeldOut(quran);
 
 console.log(
   failures === 0
