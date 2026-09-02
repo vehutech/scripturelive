@@ -17,13 +17,23 @@ import type { Engine, EngineHandlers } from "./types";
 const SAMPLE_RATE = 16000;
 /** How much trailing audio each pass transcribes. */
 const WINDOW_SECONDS = 6;
-/** How often a pass runs. Shorter than the window, so passes overlap and words survive
- *  being split across a boundary. */
-const HOP_SECONDS = 2;
+/**
+ * Shortest gap between passes. Measured on this machine, a 6-second window takes about
+ * 4.2 s on WebGPU once warm and about 7 s on WASM, so a fixed short interval would just
+ * queue work that never drains. The real gap is whichever is longer, this floor or the
+ * last pass — see `schedule`.
+ */
+const MIN_HOP_MS = 1500;
+/** Leave this much headroom over the last pass, so passes never pile up. */
+const HOP_HEADROOM = 1.15;
 
+/**
+ * English uses the English-only model: it is smaller, more accurate on English, and the
+ * multilingual one is only needed when the corpus is not English.
+ */
 const MODELS = {
-  tiny: "onnx-community/whisper-tiny",
-  base: "onnx-community/whisper-base",
+  tiny: { en: "Xenova/whisper-tiny.en", multilingual: "Xenova/whisper-tiny" },
+  base: { en: "Xenova/whisper-base.en", multilingual: "Xenova/whisper-base" },
 } as const;
 
 export type WhisperSize = keyof typeof MODELS;
@@ -52,7 +62,10 @@ export class WhisperEngine implements Engine {
   private stream: MediaStream | null = null;
   private context: AudioContext | null = null;
   private worklet: AudioWorkletNode | null = null;
-  private timer: ReturnType<typeof setInterval> | null = null;
+  private timer: ReturnType<typeof setTimeout> | null = null;
+  private backend: "webgpu" | "wasm" | null = null;
+  /** Duration of the last pass, used to pace the next one. */
+  private lastPassMs = MIN_HOP_MS;
   /** Rolling buffer of the most recent WINDOW_SECONDS of audio. */
   private buffer = new Float32Array(SAMPLE_RATE * WINDOW_SECONDS);
   private filled = 0;
@@ -101,18 +114,44 @@ export class WhisperEngine implements Engine {
 
     // Imported lazily so browsers using the Web Speech fast lane never download it.
     const { pipeline } = await import("@huggingface/transformers");
-    const transcriber = await pipeline("automatic-speech-recognition", MODELS[this.size], {
-      progress_callback: (event: { status?: string; progress?: number }) => {
-        if (event.status === "progress" && typeof event.progress === "number") {
-          handlers.onStatus({
-            kind: "loading",
-            detail: `Loading the ${this.size} speech model`,
-            progress: event.progress / 100,
-          });
-        }
-      },
-    });
-    this.transcriber = transcriber as unknown as typeof this.transcriber;
+    const model =
+      this.language === "en" ? MODELS[this.size].en : MODELS[this.size].multilingual;
+
+    const progress_callback = (event: { status?: string; progress?: number }) => {
+      if (event.status === "progress" && typeof event.progress === "number") {
+        handlers.onStatus({
+          kind: "loading",
+          detail: `Loading the ${this.size} speech model`,
+          progress: event.progress / 100,
+        });
+      }
+    };
+
+    // WebGPU runs a 6-second window at about 0.8x realtime once warm; WASM runs it at
+    // about 1.3x, which cannot keep up with continuous speech. Prefer the GPU and fall
+    // back rather than fail, since WASM still works for short bursts and manual use.
+    let transcriber: unknown;
+    try {
+      if (!("gpu" in navigator)) throw new Error("no WebGPU");
+      transcriber = await pipeline("automatic-speech-recognition", model, {
+        device: "webgpu",
+        dtype: "fp32",
+        progress_callback,
+      });
+      this.backend = "webgpu";
+    } catch {
+      transcriber = await pipeline("automatic-speech-recognition", model, {
+        device: "wasm",
+        progress_callback,
+      });
+      this.backend = "wasm";
+      handlers.onStatus({
+        kind: "warning",
+        message:
+          "Running on CPU — this browser has no GPU acceleration, so recognition will lag behind speech.",
+      });
+    }
+    this.transcriber = transcriber as typeof this.transcriber;
 
     try {
       this.stream = await navigator.mediaDevices.getUserMedia({
@@ -146,8 +185,24 @@ export class WhisperEngine implements Engine {
     this.running = true;
     this.filled = 0;
     this.lastText = "";
-    this.timer = setInterval(() => void this.pass(handlers), HOP_SECONDS * 1000);
+    this.schedule(handlers);
     handlers.onStatus({ kind: "listening" });
+  }
+
+  /**
+   * Run passes back to back rather than on a fixed interval.
+   *
+   * A fixed interval shorter than a pass just queues work that never drains. Waiting for
+   * the previous pass and adding headroom keeps the engine at whatever rate the device
+   * can actually sustain.
+   */
+  private schedule(handlers: EngineHandlers): void {
+    if (!this.running) return;
+    const delay = Math.max(MIN_HOP_MS, this.lastPassMs * HOP_HEADROOM);
+    this.timer = setTimeout(async () => {
+      await this.pass(handlers);
+      this.schedule(handlers);
+    }, delay);
   }
 
   /** Transcribe the current window, skipping if a previous pass is still running. */
@@ -157,6 +212,7 @@ export class WhisperEngine implements Engine {
     if (this.filled < SAMPLE_RATE) return;
 
     this.busy = true;
+    const started = performance.now();
     try {
       const audio = this.buffer.slice(this.buffer.length - this.filled);
       const output = await this.transcriber(audio, {
@@ -177,14 +233,20 @@ export class WhisperEngine implements Engine {
         message: `A recognition pass failed: ${error instanceof Error ? error.message : String(error)}`,
       });
     } finally {
+      this.lastPassMs = performance.now() - started;
       this.busy = false;
     }
+  }
+
+  /** Which backend actually loaded, once start() has resolved. */
+  get acceleration(): "webgpu" | "wasm" | null {
+    return this.backend;
   }
 
   stop(): void {
     this.running = false;
     if (this.timer !== null) {
-      clearInterval(this.timer);
+      clearTimeout(this.timer);
       this.timer = null;
     }
     this.worklet?.port.close();
